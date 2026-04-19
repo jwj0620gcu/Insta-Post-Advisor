@@ -1,0 +1,189 @@
+{
+  "generated_at": "2026-04-18T16:41:39.261484+00:00",
+  "feature_contract_version": "v1.1.0",
+  "mode": "public-crawl",
+  "input_file": "data/instagram_recalibration/raw_posts.csv",
+  "total_rows": 0,
+  "coverage": {
+    "category_counts": {
+      "food": 0,
+      "fashion": 0,
+      "fitness": 0,
+      "business": 0,
+      "lifestyle": 0,
+      "travel": 0,
+      "education": 0,
+      "shop": 0
+    },
+    "format_counts": {
+      "reels": 0,
+      "carousel": 0,
+      "single": 0
+    },
+    "category_format_matrix": {
+      "food": {
+        "reels": 0,
+        "carousel": 0,
+        "single": 0
+      },
+      "fashion": {
+        "reels": 0,
+        "carousel": 0,
+        "single": 0
+      },
+      "fitness": {
+        "reels": 0,
+        "carousel": 0,
+        "single": 0
+      },
+      "business": {
+        "reels": 0,
+        "carousel": 0,
+        "single": 0
+      },
+      "lifestyle": {
+        "reels": 0,
+        "carousel": 0,
+        "single": 0
+      },
+      "travel": {
+        "reels": 0,
+        "carousel": 0,
+        "single": 0
+      },
+      "education": {
+        "reels": 0,
+        "carousel": 0,
+        "single": 0
+      },
+      "shop": {
+        "reels": 0,
+        "carousel": 0,
+        "single": 0
+      }
+    },
+    "category_covered": 0,
+    "format_covered": 0
+  },
+  "missingness": {
+    "counts": {
+      "post_id": 0,
+      "created_at": 0,
+      "category": 0,
+      "format": 0,
+      "caption": 0,
+      "hashtags_count": 0,
+      "media_count": 0,
+      "followers": 0,
+      "likes": 0,
+      "comments": 0,
+      "views": 0
+    },
+    "rates_pct": {
+      "post_id": 0.0,
+      "created_at": 0.0,
+      "category": 0.0,
+      "format": 0.0,
+      "caption": 0.0,
+      "hashtags_count": 0.0,
+      "media_count": 0.0,
+      "followers": 0.0,
+      "likes": 0.0,
+      "comments": 0.0,
+      "views": 0.0
+    },
+    "per_format_required_missing_counts": {
+      "reels": 0,
+      "carousel": 0,
+      "single": 0
+    }
+  },
+  "outliers": {
+    "range_violation_counts": {
+      "hashtags_count": 0,
+      "media_count": 0,
+      "followers": 0,
+      "reach": 0,
+      "impressions": 0,
+      "likes": 0,
+      "comments": 0,
+      "saves": 0,
+      "shares": 0,
+      "watch_3s_rate": 0,
+      "watch_completion_rate": 0,
+      "carousel_swipe_rate": 0,
+      "profile_visits": 0
+    },
+    "range_violation_rates_pct": {
+      "hashtags_count": 0.0,
+      "media_count": 0.0,
+      "followers": 0.0,
+      "reach": 0.0,
+      "impressions": 0.0,
+      "likes": 0.0,
+      "comments": 0.0,
+      "saves": 0.0,
+      "shares": 0.0,
+      "watch_3s_rate": 0.0,
+      "watch_completion_rate": 0.0,
+      "carousel_swipe_rate": 0.0,
+      "profile_visits": 0.0
+    },
+    "invalid_datetime_count": 0,
+    "invalid_impressions_vs_reach_count": 0
+  },
+  "recency": {
+    "oldest_created_at": null,
+    "newest_created_at": null,
+    "within_90d_count": 0,
+    "within_90d_rate_pct": 0.0
+  },
+  "followers": {
+    "bucket_counts": {
+      "0-1k": 0,
+      "1k-10k": 0,
+      "10k-100k": 0,
+      "100k+": 0,
+      "unknown": 0
+    },
+    "bucket_rates_pct": {
+      "0-1k": 0.0,
+      "1k-10k": 0.0,
+      "10k-100k": 0.0,
+      "100k+": 0.0,
+      "unknown": 0.0
+    }
+  },
+  "optional_metric_availability": {
+    "nonempty_counts": {
+      "views": 0,
+      "reach": 0,
+      "impressions": 0,
+      "saves": 0,
+      "shares": 0,
+      "watch_3s_rate": 0,
+      "watch_completion_rate": 0,
+      "carousel_swipe_rate": 0,
+      "profile_visits": 0
+    },
+    "nonempty_rates_pct": {
+      "views": 0.0,
+      "reach": 0.0,
+      "impressions": 0.0,
+      "saves": 0.0,
+      "shares": 0.0,
+      "watch_3s_rate": 0.0,
+      "watch_completion_rate": 0.0,
+      "carousel_swipe_rate": 0.0,
+      "profile_visits": 0.0
+    }
+  },
+  "gates": {
+    "format_min_30_pass": false,
+    "format_min_100_pass": false,
+    "all_categories_covered_pass": false,
+    "recency_90d_70pct_pass": false,
+    "public_core_metrics_95pct_pass": false,
+    "reels_views_30pct_pass": false
+  }
+}
