@@ -1,0 +1,105 @@
+:root {
+  --ig-yellow: #feda75;
+  --ig-orange: #fa7e1e;
+  --ig-coral: #f56040;
+  --ig-pink: #d62976;
+  --ig-purple: #962fbf;
+  --ig-indigo: #4f5bd5;
+  --ig-gradient: linear-gradient(135deg, #feda75 0%, #fa7e1e 22%, #f56040 40%, #d62976 62%, #962fbf 82%, #4f5bd5 100%);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  color: #241628;
+  background-color: #fff8f8;
+}
+
+::selection {
+  background-color: rgba(214, 41, 118, 0.2);
+  color: #1f1224;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ig-gradient);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.04);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(214, 41, 118, 0.5) transparent;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid #d62976;
+  outline-offset: 2px;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(214, 41, 118, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(150, 47, 191, 0.28);
+  }
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-bottom-bar {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
