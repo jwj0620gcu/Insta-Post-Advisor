@@ -48,7 +48,7 @@ def _load_env_files() -> None:
 
 _load_env_files()
 
-logger = logging.getLogger("instarx.agent")
+logger = logging.getLogger("insta-advisor.agent")
 
 MODEL_FAST = os.getenv("LLM_MODEL_FAST", "gpt-4o-mini")
 MODEL_PRO = os.getenv("LLM_MODEL_PRO", "gpt-4o")

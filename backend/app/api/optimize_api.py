@@ -12,7 +12,7 @@ from app.agents.base_agent import BaseAgent, MODEL_PRO
 from app.agents.research_data import pre_score
 
 router = APIRouter()
-logger = logging.getLogger("instarx.optimize")
+logger = logging.getLogger("insta-advisor.optimize")
 
 OPTIMIZE_PROMPT = """너는 인스타그램 성과형 콘텐츠 최적화 전문가다.
 진단 결과(감점 사유)를 기반으로 서로 다른 전략 3개를 생성한다.

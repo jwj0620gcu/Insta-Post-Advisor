@@ -49,7 +49,7 @@ export default function Report() {
   } | null;
 
   useEffect(() => {
-    document.title = `진단 리포트 - InstaRx`;
+    document.title = `진단 리포트 - Insta-Advisor`;
     if (!state || state.isFallback) return;
     const { report, params } = state;
     void (async () => {
@@ -435,7 +435,7 @@ export default function Report() {
 
           <motion.div {...sectionAnim(6)}>
           <Typography sx={{ textAlign: "center", fontSize: 11, color: "#b6a4ba", mt: 3 }}>
-            InstaRx · 참고용으로만 활용하세요 ·{" "}
+            Insta-Advisor · 참고용으로만 활용하세요 ·{" "}
             <Typography component="a" href="mailto:jwj0620@gachon.ac.kr"
               sx={{ fontSize: 11, color: "#a995af", textDecoration: "none", "&:hover": { color: "#d62976" } }}>
               문의

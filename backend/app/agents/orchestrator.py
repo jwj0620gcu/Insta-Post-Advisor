@@ -25,7 +25,7 @@ from app.agents.judge_agent import JudgeAgent
 from app.agents.base_agent import _is_mimo_openai_compat
 from app.agents.prompts.debate import DEBATE_PROMPT
 
-logger = logging.getLogger("instarx.orchestrator")
+logger = logging.getLogger("insta-advisor.orchestrator")
 
 
 def _clamp_score(value: float) -> float:

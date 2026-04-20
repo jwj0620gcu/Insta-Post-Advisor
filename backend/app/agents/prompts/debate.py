@@ -1,6 +1,6 @@
 """Agent 토론 라운드 Prompt (Instagram)"""
 
-DEBATE_PROMPT = """너는 InstaRx의 **{agent_name}**다. 아래 다른 전문가 의견을 검토하고 반박/보완하라.
+DEBATE_PROMPT = """너는 Insta-Advisor의 **{agent_name}**다. 아래 다른 전문가 의견을 검토하고 반박/보완하라.
 
 다른 전문가 의견:
 {other_opinions}

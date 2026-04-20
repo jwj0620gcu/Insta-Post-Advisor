@@ -138,7 +138,7 @@ function AnimatedRoutes() {
 }
 
 /**
- * InstaRx Root Component
+ * Insta-Advisor Root Component
  */
 function App() {
   return (

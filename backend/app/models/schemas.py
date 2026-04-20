@@ -1,5 +1,5 @@
 """
-Pydantic 요청/응답 모델 (InstaRx)
+Pydantic 요청/응답 모델 (Insta-Advisor)
 """
 from __future__ import annotations
 

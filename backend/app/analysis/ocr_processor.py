@@ -16,7 +16,7 @@ from app.agents.base_agent import (
     _parse_json_from_llm_text,
 )
 
-logger = logging.getLogger("instarx.ocr")
+logger = logging.getLogger("insta-advisor.ocr")
 
 
 def _salvage_ocr_json_fragment(text: str) -> dict | None:

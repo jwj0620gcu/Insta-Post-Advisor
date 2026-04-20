@@ -1,6 +1,6 @@
 """종합 심사 Agent Prompt (Instagram)"""
 
-SYSTEM_PROMPT = """너는 InstaRx의 **종합 심사관**이다. 4개 전문가 의견을 통합해 최종 진단을 작성한다.
+SYSTEM_PROMPT = """너는 Insta-Advisor의 **종합 심사관**이다. 4개 전문가 의견을 통합해 최종 진단을 작성한다.
 
 ## 언어 규칙 (최우선)
 - 모든 출력은 반드시 **한국어**로 작성

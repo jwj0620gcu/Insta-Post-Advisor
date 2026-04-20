@@ -18,7 +18,7 @@ import WhatshotIcon from "@mui/icons-material/Whatshot";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CodeIcon from "@mui/icons-material/Code";
 
-const STORAGE_KEY = "instarx_announcement_seen_v1";
+const STORAGE_KEY = "insta-advisor_announcement_seen_v1";
 
 const WaveSvg = () => (
   <svg
@@ -233,7 +233,7 @@ export default function AnnouncementDialog() {
               letterSpacing: "-0.5px", mb: 1,
             }}
           >
-            InstaRx에 오신 것을 환영합니다
+            Insta-Advisor에 오신 것을 환영합니다
           </Typography>
           <Typography
             sx={{
@@ -303,7 +303,7 @@ export default function AnnouncementDialog() {
           <LinkCard
             icon={<GitHubIcon sx={{ fontSize: 20, color: "#594560" }} />}
             label="오픈소스 저장소"
-            sublabel="github.com/cocone-m/instarx"
+            sublabel="github.com/cocone-m/insta-advisor"
             href="https://github.com"
           />
         </Box>
@@ -356,7 +356,7 @@ export default function AnnouncementDialog() {
             borderRadius: "14px", textTransform: "none",
           }}
         >
-          InstaRx 시작하기
+          Insta-Advisor 시작하기
         </Button>
 
         <Typography

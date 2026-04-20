@@ -7,7 +7,7 @@
  */
 import type { DiagnoseResult } from "./api";
 
-const DB_NAME = "instarx_local_memory";
+const DB_NAME = "insta-advisor_local_memory";
 const DB_VERSION = 1;
 const STORE = "diagnoses";
 
@@ -44,7 +44,7 @@ function openDb(): Promise<IDBDatabase> {
  */
 export async function migrateLegacyLocalStorage(): Promise<void> {
   try {
-    const raw = localStorage.getItem("instarx_history");
+    const raw = localStorage.getItem("insta-advisor_history");
     if (!raw) return;
     const arr = JSON.parse(raw) as Array<{
       title: string;
@@ -56,7 +56,7 @@ export async function migrateLegacyLocalStorage(): Promise<void> {
       params?: Record<string, unknown>;
     }>;
     if (!Array.isArray(arr) || arr.length === 0) {
-      localStorage.removeItem("instarx_history");
+      localStorage.removeItem("insta-advisor_history");
       return;
     }
     const db = await openDb();
@@ -80,7 +80,7 @@ export async function migrateLegacyLocalStorage(): Promise<void> {
       tx.oncomplete = () => res();
       tx.onerror = () => rej(tx.error ?? new Error("tx failed"));
     });
-    localStorage.removeItem("instarx_history");
+    localStorage.removeItem("insta-advisor_history");
   } catch {
     /* 마이그레이션 실패 시에도 메인 흐름은 계속 진행 */
   }

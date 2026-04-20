@@ -1,5 +1,5 @@
 """
-InstaRx 백엔드 엔트리포인트
+Insta-Advisor 백엔드 엔트리포인트
 """
 import logging
 import os
@@ -71,7 +71,7 @@ logging.basicConfig(
 )
 
 app = FastAPI(
-    title="InstaRx API",
+    title="Insta-Advisor API",
     description="AI 기반 인스타그램 게시물 진단 플랫폼",
     version="0.2.0",
     lifespan=lifespan,

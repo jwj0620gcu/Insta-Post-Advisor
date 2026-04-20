@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
 router = APIRouter()
-logger = logging.getLogger("instarx.admin")
+logger = logging.getLogger("insta-advisor.admin")
 
 ADMIN_PASSWORD_SHA512 = "2edcf6be5d8b758e185c1e73d86430bf7c438a87aad4649e185845ddca7b19bdc340ea56e8c5d89e3c60d736d49665c8465567075d1715f3d4d186ee33e9dc9e"
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "baseline.db")
@@ -116,7 +116,7 @@ ADMIN_HTML = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>InstaRx Admin</title>
+<title>Insta-Advisor Admin</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Inter,'Noto Sans SC',sans-serif;background:#faf9f7;color:#262626;line-height:1.6}
@@ -157,7 +157,7 @@ tr:hover td{background:#fafafa}
 <script>
 const app=document.getElementById('app');let token='';
 function showLogin(err){
-  app.innerHTML=`<div class="login"><div class="login-box"><h1>InstaRx Admin</h1><p>관리자 패널</p>
+  app.innerHTML=`<div class="login"><div class="login-box"><h1>Insta-Advisor Admin</h1><p>관리자 패널</p>
   <input type="password" id="pw" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()">
   <button onclick="doLogin()">접속</button>${err?'<div class=err>'+err+'</div>':''}</div></div>`;
   document.getElementById('pw')?.focus();
@@ -174,7 +174,7 @@ function showDash(d){
   const usage=d.recent_usage||[];
   const cats=Object.entries(d.usage_by_category||{});const maxCat=Math.max(...cats.map(c=>c[1]),1);
   app.innerHTML=`<div class="d">
-  <h1>InstaRx Admin</h1><div class="sub">${d.timestamp} · uptime ${Math.round(d.uptime_seconds/60)}min</div>
+  <h1>Insta-Advisor Admin</h1><div class="sub">${d.timestamp} · uptime ${Math.round(d.uptime_seconds/60)}min</div>
   <div class="g">
     <div class="c"><div class="l">오늘 진단</div><div class="v">${d.today_requests||0}</div></div>
     <div class="c"><div class="l">오늘 UV</div><div class="v b">${d.today_ips||0}</div></div>

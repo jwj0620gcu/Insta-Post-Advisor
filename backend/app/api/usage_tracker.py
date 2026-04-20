@@ -10,7 +10,7 @@ from typing import Optional
 
 from fastapi import Request
 
-logger = logging.getLogger("instarx.usage")
+logger = logging.getLogger("insta-advisor.usage")
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "baseline.db")
 
 

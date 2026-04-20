@@ -17,7 +17,7 @@ import subprocess
 import tempfile
 from typing import Optional
 
-logger = logging.getLogger("instarx.video_stt")
+logger = logging.getLogger("insta-advisor.video_stt")
 
 
 def _stt_enabled() -> bool:

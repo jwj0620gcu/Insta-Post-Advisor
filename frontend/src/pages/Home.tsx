@@ -149,7 +149,7 @@ export default function Home() {
   const recognizeInFlightRef = useRef<Set<string>>(new Set());
   const prevPendingRecognitionRef = useRef(false);
 
-  useEffect(() => { document.title = "InstaRx"; }, []);
+  useEffect(() => { document.title = "Insta-Advisor"; }, []);
 
   useEffect(() => {
     void getApiHealth().then(setApiReachable);
@@ -607,7 +607,7 @@ export default function Home() {
               <Typography sx={{ color: "#fff", fontSize: 10, fontWeight: 800, fontFamily: "Inter" }}>Rx</Typography>
             </Box>
             <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#241628", letterSpacing: "-0.02em" }}>
-              InstaRx
+              Insta-Advisor
             </Typography>
           </Box>
           {/* Desktop: inline description */}

@@ -13,7 +13,7 @@ from app.models.schemas import HistoryCreateRequest, HistoryListItem, HistoryDet
 from app import local_memory
 
 router = APIRouter()
-logger = logging.getLogger("instarx.history")
+logger = logging.getLogger("insta-advisor.history")
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "baseline.db")
 

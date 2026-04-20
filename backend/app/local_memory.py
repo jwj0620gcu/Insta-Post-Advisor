@@ -2,7 +2,7 @@
 로컬 메모리 레이어.
 Markdown 파일은 사람이 읽기 쉬운 기록원, JSON은 전체 리포트 원본 보관용이다.
 
-디렉터리(backend/data/instarx_workspace):
+디렉터리(backend/data/insta-advisor_workspace):
 - MEMORY.md                  장기 설명(수동 편집 가능)
 - memory/YYYY-MM-DD.md       일자별 진단 요약 append 로그
 - memory/records/{id}.json   단건 전체 리포트(SQLite와 동시 기록)
@@ -14,15 +14,15 @@ import logging
 import os
 from datetime import datetime
 
-logger = logging.getLogger("instarx.local_memory")
+logger = logging.getLogger("insta-advisor.local_memory")
 
 _DATA_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
-WORKSPACE_ROOT = os.path.join(_DATA_ROOT, "instarx_workspace")
+WORKSPACE_ROOT = os.path.join(_DATA_ROOT, "insta-advisor_workspace")
 MEMORY_MD = os.path.join(WORKSPACE_ROOT, "MEMORY.md")
 MEMORY_DIR = os.path.join(WORKSPACE_ROOT, "memory")
 RECORDS_DIR = os.path.join(MEMORY_DIR, "records")
 
-MEMORY_MD_TEMPLATE = """# InstaRx 로컬 메모리(MEMORY)
+MEMORY_MD_TEMPLATE = """# Insta-Advisor 로컬 메모리(MEMORY)
 
 이 파일은 **장기 설명 영역**이다. 일별 진단 로그는 `memory/YYYY-MM-DD.md`, 전체 JSON은 `memory/records/`에 저장된다.
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-# InstaRx
+# Insta-Advisor
 
 ### 인스타그램 게시물 진단 엔진
 

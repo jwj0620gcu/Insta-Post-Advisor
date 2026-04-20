@@ -21,7 +21,7 @@ from app.agents.base_agent import _llm_provider
 from app.models.schemas import DiagnoseResponse
 
 router = APIRouter()
-logger = logging.getLogger("instarx.diagnose")
+logger = logging.getLogger("insta-advisor.diagnose")
 
 MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
 # 영상 업로드 상한(진단/빠른 인식/심층 분석 공통). 고비트레이트 4K 녹화는 짧아도 용량이 클 수 있다.

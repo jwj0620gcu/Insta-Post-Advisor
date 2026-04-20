@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: instarx
+    name: insta-advisor
     runtime: python
     region: singapore
     plan: free

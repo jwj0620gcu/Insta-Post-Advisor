@@ -20,7 +20,7 @@ from app.agents.base_agent import (
 )
 from app.analysis.mimo_video import build_mimo_video_url_content_part
 
-logger = logging.getLogger("instarx.video_analyzer")
+logger = logging.getLogger("insta-advisor.video_analyzer")
 
 
 class VideoAnalyzer:
@@ -50,7 +50,7 @@ class VideoAnalyzer:
             "X-Goog-Upload-Header-Content-Type": mime_type,
             "Content-Type": "application/json",
         }
-        start_body = {"file": {"display_name": "instarx_video_input"}}
+        start_body = {"file": {"display_name": "insta-advisor_video_input"}}
         start_resp = await client.post(start_url, headers=start_headers, json=start_body)
         if start_resp.status_code >= 400:
             try:

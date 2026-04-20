@@ -43,7 +43,7 @@ const SLOTS: SlotConfig[] = [
 
 const LINK_REGEX = /https?:\/\/\S+/gi;
 const ORDERED_SLOT_KEYS: SlotType[] = ["cover", "content", "profile", "comments"];
-const DRAFT_KEY = "instarx_screenshot_draft_v1";
+const DRAFT_KEY = "insta-advisor_screenshot_draft_v1";
 
 /**
  * 스크린샷 다차원 분석 페이지

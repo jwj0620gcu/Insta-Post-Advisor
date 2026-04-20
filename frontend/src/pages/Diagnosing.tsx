@@ -201,7 +201,7 @@ export default function Diagnosing() {
   const tips = (params ? TIPS[params.category] : null) || TIPS._default;
 
   useEffect(() => {
-    document.title = "진단 중... - InstaRx";
+    document.title = "진단 중... - Insta-Advisor";
     if (!params) { navigate("/app"); return; }
     let cancelled = false;
     const abortController = new AbortController();

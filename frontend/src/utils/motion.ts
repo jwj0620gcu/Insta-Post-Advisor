@@ -1,7 +1,7 @@
 import { type Variants, type Transition } from "framer-motion";
 
 /* ============================================================
-   InstaRx Framer Motion Presets
+   Insta-Advisor Framer Motion Presets
    Reusable animation variants and transition configs
    ============================================================ */
 

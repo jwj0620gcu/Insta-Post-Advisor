@@ -16,7 +16,7 @@ router = APIRouter()
 @router.get("/health")
 async def api_health():
     """경량 헬스체크: Vite 프록시를 통한 백엔드 연결 가능 여부만 확인한다."""
-    return {"ok": True, "service": "instarx-api"}
+    return {"ok": True, "service": "insta-advisor-api"}
 
 
 router.include_router(diagnose_router, tags=["diagnose"])

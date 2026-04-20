@@ -29,7 +29,7 @@ from app.api.diagnose import (
 )
 
 router = APIRouter()
-logger = logging.getLogger("instarx.screenshot")
+logger = logging.getLogger("insta-advisor.screenshot")
 
 
 def _env_int(name: str, default: int, *, min_v: int, max_v: int) -> int:

@@ -35,7 +35,7 @@ make ci
 
 ## Architecture
 
-InstaRx is an AI-powered Instagram post diagnosis platform targeting Korean content creators, small business owners, and freelance SNS managers. Users submit a post (text/screenshot/images/video), and 4 AI agents analyze it through a multi-round debate.
+Insta-Advisor is an AI-powered Instagram post diagnosis platform targeting Korean content creators, small business owners, and freelance SNS managers. Users submit a post (text/screenshot/images/video), and 4 AI agents analyze it through a multi-round debate.
 
 ### Multi-Agent Flow (backend/app/agents/orchestrator.py)
 

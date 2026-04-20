@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from app.agents.base_agent import BaseAgent, MODEL_FAST
 
 router = APIRouter()
-logger = logging.getLogger("instarx.comments")
+logger = logging.getLogger("insta-advisor.comments")
 
 COMMENT_PROMPT = """너는 인스타그램 댓글 시뮬레이터다. 한국 인스타 댓글 톤으로 생성한다.
 

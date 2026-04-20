@@ -29,13 +29,13 @@ export default function DiagnoseCard({ report, title }: Props) {
       const blob = await generateImage();
       if (!blob) return;
       if (navigator.share && navigator.canShare?.({ files: [new File([blob], "card.png", { type: "image/png" })] })) {
-        const file = new File([blob], `InstaRx-진단-${title.slice(0, 10)}.png`, { type: "image/png" });
-        await navigator.share({ files: [file], title: "InstaRx 진단 카드" });
+        const file = new File([blob], `Insta-Advisor-진단-${title.slice(0, 10)}.png`, { type: "image/png" });
+        await navigator.share({ files: [file], title: "Insta-Advisor 진단 카드" });
         return;
       }
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.download = `InstaRx-진단-${title.slice(0, 10)}.png`;
+      link.download = `Insta-Advisor-진단-${title.slice(0, 10)}.png`;
       link.href = url;
       link.click();
       URL.revokeObjectURL(url);
@@ -83,7 +83,7 @@ export default function DiagnoseCard({ report, title }: Props) {
           padding: "20px 24px 16px",
           color: "#fff",
         }}>
-          <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.8, marginBottom: 8 }}>InstaRx 진단</div>
+          <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.8, marginBottom: 8 }}>Insta-Advisor 진단</div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}><tbody><tr>
             <td style={{ verticalAlign: "top", paddingRight: 12 }}>
               <div style={{
@@ -159,9 +159,9 @@ export default function DiagnoseCard({ report, title }: Props) {
               background: "linear-gradient(135deg, #f56040, #d62976)",
               display: "inline-block", marginRight: 4, verticalAlign: "middle",
             }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#241628" }}>InstaRx</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#241628" }}>Insta-Advisor</span>
           </div>
-          <span style={{ fontSize: 9, color: "#b6a4ba" }}>instarx.app</span>
+          <span style={{ fontSize: 9, color: "#b6a4ba" }}>insta-advisor.app</span>
         </div>
       </div>
     </Box>
