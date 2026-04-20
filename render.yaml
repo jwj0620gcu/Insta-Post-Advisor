@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: instarx
+    runtime: python
+    region: singapore
+    plan: free
+    buildCommand: >-
+      pip install -r backend/requirements.txt &&
+      cd frontend && npm install && npm run build && cd .. &&
+      python scripts/init_db.py &&
+      python scripts/seed_data.py &&
+      python scripts/compute_baseline.py
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai
+      - key: LLM_MODEL_PRO
+        value: gemini-2.5-flash-lite
+      - key: LLM_MODEL_OMNI
+        value: gemini-2.5-flash-lite
+      - key: LLM_MODEL_FAST
+        value: gemini-2.5-flash-lite
+      - key: LLM_FREE_TIER_MODE
+        value: "off"
+      - key: LLM_RATE_LIMIT_RETRIES
+        value: "3"
+      - key: PLATFORM
+        value: instagram
+      - key: VIDEO_STT_ENABLED
+        value: "0"
+      - key: ALLOWED_ORIGINS
+        value: "*"
