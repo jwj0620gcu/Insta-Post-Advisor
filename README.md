@@ -2,17 +2,17 @@
 
 # InstaRx
 
-### 인스타그램 게시물 AI 진단 엔진
+### 인스타그램 게시물 진단 엔진
 
-**멀티 에이전트 분석** | **96건 실제 데이터 학습** | **카테고리별 베이스라인 비교**
-
-<br>
-
-[**기술 아키텍처**](#기술-아키텍처) &nbsp;&nbsp;|&nbsp;&nbsp; [**빠른 시작**](#빠른-시작) &nbsp;&nbsp;|&nbsp;&nbsp; [**연구 백서**](docs/research_whitepaper.html)
+**5-Agent 멀티 에이전트** | **96건 실제 데이터 학습** | **카테고리별 베이스라인 비교**
 
 <br>
 
-> 인스타그램 게시물(이미지·릴스·스크린샷)을 올리면, AI가 콘텐츠·비주얼·성장 전략을 분석하고 정량적 진단 리포트와 실행 가능한 개선 방안을 제공합니다.
+[**기술 아키텍처**](#기술-아키텍처) &nbsp;&nbsp;|&nbsp;&nbsp; [**빠른 시작**](#빠른-시작) &nbsp;&nbsp;|&nbsp;&nbsp; [**데모**](https://insta-post-advisor.onrender.com)
+
+<br>
+
+> 인스타그램 게시물(이미지·캐러셀·릴스·스크린샷)을 올리면, 5개 전문가 에이전트가 콘텐츠·비주얼·성장 전략·유저 반응을 분석하고 정량적 진단 리포트와 실행 가능한 개선 방안을 제공합니다.
 
 </div>
 
@@ -21,32 +21,33 @@
 ## 진단 흐름
 
 ```
-업로드 (이미지 / 릴스 / 스크린샷)
+업로드 (이미지 / 캐러셀 / 릴스 / 스크린샷)
     │
     ▼
-① 파싱          OpenCV로 이미지 분석 (채도·밝기·텍스트 비율·얼굴 유무)
-                텍스트 분석기로 캡션·해시태그 구조 분석
+① 파싱           텍스트 분석기 → 캡션·해시태그 구조 분석
+                 OpenCV → 채도·밝기·텍스트 비율·얼굴 유무
+                 캐러셀: 전체 슬라이드 병렬 분석 + 색감 일관성 산출
     │
     ▼
-② 사전 채점     Model A — LLM 없이 50ms 이내 즉시 채점
-                96건 실제 게시물 회귀 분석 기반 5차원 점수 산출
+② 사전 채점      Model A — LLM 없이 즉시 채점 (50ms 이내)
+ + 베이스라인    96건 실제 게시물 회귀 분석 기반 5차원 점수 산출
+   비교          SQLite에서 같은 카테고리 평균 지표 비교
     │
     ▼
-③ 베이스라인    SQLite에서 같은 카테고리 평균 지표 조회
-비교            캡션 길이 / 해시태그 수 / 인게이지먼트율 비교
+③ Round 1        4개 에이전트 병렬 진단 (asyncio.gather)
+   병렬 진단     ┌─ 후킹 전문가    캡션 후킹·감정선·읽기 흐름
+                 ├─ 비주얼 진단가  이미지 레이아웃·색감·CTA 슬라이드
+                 ├─ 트렌드 에이전트  해시태그·카테고리 트렌드·성장 전략
+                 └─ 인스타 중독 유저  실제 유저 반응·시뮬레이션 댓글 생성
     │
     ▼
-④ 에이전트      ContentAgent   후킹·캡션·감정선 분석
-진단            UserSimAgent   실제 유저 반응·댓글 시뮬레이션
-(병렬 실행)
+④ Round 2        토론 + 종합 심사 동시 실행 (asyncio.gather)
+ + 심사          ├─ 토론: 4개 에이전트가 서로의 의견에 반박·보완
+   (병렬)        └─ 종합 심사관: 에이전트 결과 통합 → 최종 점수·등급·개선안
     │
     ▼
-⑤ 종합 심사     JudgeAgent — 두 에이전트 결과 종합
-                최종 점수·등급·핵심 이슈·우선순위 개선안 결정
-    │
-    ▼
-⑥ 리포트 출력   레이더 차트 / 차원 바 / 베이스라인 비교
-                시뮬레이션 댓글 / 개선 제안 목록
+⑤ 리포트 출력   레이더 차트(결정론적) / 차원 바 / 베이스라인 비교
+                 에이전트 토론 타임라인 / 시뮬레이션 댓글 / 개선 제안
 ```
 
 ---
@@ -58,7 +59,26 @@
 - **학습 데이터**: 96건 실제 인스타그램 게시물 (2026년 3–4월, 8개 카테고리 × 12건)
 - **포맷별 평균 인게이지먼트율**: 캐러셀 24.5% > 릴스 16.3% > 단일 이미지 4.0%
 - **동작 방식**: LLM 호출 없이 회귀 가중치만으로 즉시 채점 → 동일 입력은 항상 동일 점수
-- **출력**: 5차원 점수 (제목 품질 / 콘텐츠 품질 / 비주얼 / 태그 전략 / 인게이지먼트 잠재력)
+- **레이더 점수**: Model A + 텍스트/이미지 분석 결합 → 결정론적 산출 (LLM 출력과 독립)
+
+### 에이전트 구성 (5개)
+
+| 에이전트 | 역할 이름 | 담당 |
+|---|---|---|
+| **ContentAgent** | 후킹 전문가 | 캡션·후킹 문구·감정선·읽기 흐름 |
+| **VisualAgent** | 비주얼 진단가 | 이미지 레이아웃·색감 일관성·CTA 슬라이드 |
+| **GrowthAgent** | 트렌드 에이전트 | 해시태그·카테고리 트렌드·성장 전략 |
+| **UserSimAgent** | 인스타 중독 유저 | 실제 유저 반응 예측·시뮬레이션 댓글 생성 |
+| **JudgeAgent** | 종합 심사관 | 4개 에이전트 결과 통합·최종 등급·개선안 확정 |
+
+> `LLM_FREE_TIER_MODE=1` 설정 시: ContentAgent + UserSimAgent 2개만 실행, 토론 생략 (API 호출 수 절감)  
+> Gemini 사용 시 기본값은 free_tier_mode=True이므로, 전체 실행하려면 **`LLM_FREE_TIER_MODE=off`** 명시 필요
+
+### LLM
+
+- **현재 모델**: `gemini-2.5-flash-lite` (PRO·OMNI·FAST 역할 모두 동일)
+- **연결 방식**: OpenAI SDK → Google Gemini OpenAI 호환 엔드포인트
+- **교체 가능**: `.env`에서 `LLM_PROVIDER=openai|anthropic|gemini` 로 변경
 
 ### 베이스라인 DB (SQLite)
 
@@ -67,25 +87,6 @@
 | `baseline_stats` | 카테고리별 평균 지표 (캡션 길이·태그 수·채도·인게이지먼트율 등) |
 | `diagnosis_history` | 과거 진단 결과 저장 |
 | `usage_log` | 토큰 사용량·응답 시간 추적 |
-
-### 에이전트 구성 (현재 설정 기준)
-
-| 에이전트 | 역할 | 상태 |
-|---|---|---|
-| **ContentAgent** | 캡션·후킹·감정선 분석 | ✅ 실행 중 |
-| **UserSimAgent** | 유저 반응·댓글 시뮬레이션 | ✅ 실행 중 |
-| VisualAgent | 이미지·레이아웃 분석 | ⏸ 무료 티어 모드로 비활성 |
-| GrowthAgent | 해시태그·성장 전략 분석 | ⏸ 무료 티어 모드로 비활성 |
-| **JudgeAgent** | 에이전트 결과 종합 심사 | ✅ 실행 중 |
-| 에이전트 토론 (Round 2) | 교차 반박·보완 | ⏸ 무료 티어 모드로 비활성 |
-
-> `LLM_FREE_TIER_MODE=1` 해제 시 4개 에이전트 병렬 실행 + 토론 라운드 활성화됨
-
-### LLM
-
-- **현재 모델**: `gemini-2.5-flash-lite` (PRO·OMNI·FAST 역할 모두 동일 모델)
-- **연결 방식**: OpenAI SDK → Google Gemini OpenAI 호환 엔드포인트
-- **교체 가능**: `.env`에서 `LLM_PROVIDER=openai|anthropic|gemini` 로 변경
 
 ### 지원 카테고리 (8개)
 
@@ -96,11 +97,12 @@
 
 | 계층 | 기술 |
 |---|---|
-| **프론트엔드** | React 19 · TypeScript 6 · Vite 8 · MUI v9 · Framer Motion · ECharts · React Router v7 |
+| **프론트엔드** | React 19 · TypeScript · Vite · MUI v9 · Framer Motion · ECharts · React Router v7 |
 | **백엔드** | FastAPI · Uvicorn · Pydantic v2 · asyncio · SQLite |
 | **이미지 처리** | OpenCV (headless) · Pillow |
-| **AI** | OpenAI SDK (Gemini 호환) · Anthropic SDK (선택) |
+| **AI** | Google Gemini 2.5 Flash Lite (OpenAI 호환 엔드포인트) |
 | **저장소** | SQLite (서버) · IndexedDB (브라우저 히스토리) |
+| **배포** | Render.com (Singapore, Free Tier) |
 
 ---
 
@@ -127,7 +129,8 @@ make install && make data && ./start.sh
 | `LLM_PROVIDER` | `gemini` / `openai` / `anthropic` | `gemini` |
 | `GEMINI_API_KEY` | Google AI Studio 키 | — |
 | `LLM_MODEL_PRO` | 에이전트 진단·심사용 모델 | `gemini-2.5-flash-lite` |
-| `LLM_FREE_TIER_MODE` | `1` = 에이전트 2개만 실행, 토론 생략 | `1` |
+| `LLM_MODEL_FAST` | 토론 라운드용 모델 | `gemini-2.5-flash-lite` |
+| `LLM_FREE_TIER_MODE` | `off` = 4개 에이전트 + 토론 전체 실행 | `off` (Gemini 사용 시 기본 `on`) |
 | `VIDEO_STT_ENABLED` | `1` = 영상 음성인식 활성화 | `0` |
 | `MAX_VIDEO_UPLOAD_MB` | 영상 업로드 용량 한도 | `300` |
 
