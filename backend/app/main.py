@@ -142,7 +142,9 @@ if os.path.isdir(FRONTEND_DIST):
         async def dispatch(self, request, call_next):
             response = await call_next(request)
             path = request.url.path
+            _, ext = os.path.splitext(path)
             if (response.status_code == 404
+                    and not ext  # 파일 확장자가 있으면 SPA로 넘기지 않음
                     and not path.startswith("/api")
                     and not path.startswith("/assets")
                     and path not in ("/research", "/terms", "/privacy")
@@ -151,6 +153,8 @@ if os.path.isdir(FRONTEND_DIST):
             return response
 
     app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")), name="static")
+    # dist 루트 파일 (favicon, manifest 등) 서빙
+    app.mount("/", StaticFiles(directory=FRONTEND_DIST), name="dist-root")
     app.add_middleware(SPAMiddleware)
 
     @app.get("/app")
