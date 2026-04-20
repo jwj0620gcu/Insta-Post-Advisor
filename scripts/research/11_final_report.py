@@ -1,6 +1,6 @@
 """
-Step 11: 最终研究报告生成
-汇总所有分析结果，调用 LLM 生成完整研究报告 + 故事性叙述。
+Step 11: 최종 연구 보고서 생성
+모든 분석 결과를 집계하고 LLM을 호출하여 완전한 연구 보고서 + 스토리텔링 서술을 생성합니다.
 
 Usage:
     python scripts/research/11_final_report.py
@@ -29,54 +29,54 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text()) if path.exists() else {}
 
 
-REPORT_PROMPT = """你是一位数据科学研究员，正在为一个黑客松竞赛项目撰写研究报告。
-这份报告需要体现专业深度，同时具备故事性——能在 PPT 和路演中使用。
+REPORT_PROMPT = """당신은 데이터 과학 연구원으로, 해커톤 경진대회 프로젝트의 연구 보고서를 작성 중입니다.
+이 보고서는 전문적인 깊이를 갖추면서도 스토리텔링이 있어야 합니다 — PPT와 데모에서 사용 가능해야 합니다.
 
-## 研究背景
+## 연구 배경
 
-薯医 NoteRx 是一个小红书笔记诊断平台。我们采集了真实小红书笔记数据，
-通过「传统统计分析 + LLM 深度分析」双轨方法，建立了量化评分模型。
+InstaRx NoteRx는 Instagram 게시글 진단 플랫폼입니다. 실제 Instagram 게시글 데이터를 수집하여
+「전통 통계 분석 + LLM 심층 분석」 이중 트랙 방식으로 정량 평가 모델을 구축했습니다.
 
-## 输入数据
+## 입력 데이터
 
-### Model A 评分模型
+### Model A 평가 모델
 {model_a}
 
-### 模型验证结果
+### 모델 검증 결과
 {validation}
 
-### 用户画像（Model B，如有）
+### 사용자 페르소나 (Model B, 있을 경우)
 {personas}
 
-### 统计发现摘要
+### 통계 발견 요약
 {stats_summary}
 
-## 要求
+## 요구사항
 
-请撰写一份 **中文研究报告**，Markdown 格式，包含：
+**한국어 연구 보고서**를 Markdown 형식으로 작성하세요. 포함 항목:
 
-1. **研究概览**（100字）：样本量、方法、核心发现
-2. **方法论**（200字）：双轨分析如何互补
-3. **核心发现**（每品类一段，每段 100-150 字）：
-   - 最关键的 2-3 个发现
-   - 具体数字支撑
-   - 反直觉的结论（如果有）
-4. **量化评分标准**：每品类的「黄金参数」表格
-5. **模型验证**：准确率、相关性、可信度分析
-6. **用户画像研究**（如有数据）
-7. **局限性**（诚实但简短）
-8. **故事性收尾**：用一两句话总结这项研究的价值——
-   "这不是 AI 拍脑袋，而是用数据说话"
+1. **연구 개요** (100자): 표본 수, 방법, 핵심 발견
+2. **방법론** (200자): 이중 트랙 분석이 어떻게 상호 보완하는지
+3. **핵심 발견** (카테고리별 단락, 각 100-150자):
+   - 가장 중요한 2-3가지 발견
+   - 구체적인 수치 근거
+   - 반직관적 결론 (있을 경우)
+4. **정량 평가 기준**: 카테고리별 「황금 파라미터」 표
+5. **모델 검증**: 정확도, 상관관계, 신뢰도 분석
+6. **사용자 페르소나 연구** (데이터 있을 경우)
+7. **한계점** (솔직하지만 간결하게)
+8. **스토리텔링 마무리**: 이 연구의 가치를 한두 문장으로 요약 —
+   "AI의 직감이 아니라 데이터로 말한다"
 
-每个发现都要配一个**可以在 PPT 上直接使用的金句**，用 `> ` 引用格式标出。
+각 발견에는 **PPT에서 바로 사용 가능한 핵심 문구**를 `> ` 인용 형식으로 표기하세요.
 
-报告目标读者：黑客松评委（产品人、技术人、投资人）。
+보고서 목표 독자: 해커톤 심사위원 (기획자, 개발자, 투자자).
 """
 
 
 async def main():
     print("=" * 60)
-    print("Step 11: 最终研究报告")
+    print("Step 11: 최종 연구 보고서")
     print("=" * 60)
 
     model_a = load_json(OUTPUT_DIR / "model_a_scoring.json")
@@ -84,7 +84,7 @@ async def main():
     personas = load_json(LLM_DIR / "user_personas.json")
     desc_stats = load_json(STATS_DIR / "descriptive_stats.json")
 
-    # 精简统计摘要
+    # 통계 요약 간소화
     stats_summary = {}
     for cat, d in desc_stats.items():
         stats_summary[cat] = {
@@ -100,49 +100,49 @@ async def main():
         personas=json.dumps(
             {k: {"persona_count": len(v.get("personas", []))} for k, v in personas.items()},
             ensure_ascii=False, indent=1
-        ) if personas else "暂无评论数据，画像研究待后续数据",
+        ) if personas else "댓글 데이터 없음, 페르소나 연구는 추가 데이터 대기 중",
         stats_summary=json.dumps(stats_summary, ensure_ascii=False, indent=1)[:1500],
     )
 
     client = get_client()
-    print("调用 mimo-v2-pro 生成研究报告...")
+    print("mimo-v2-pro 호출하여 연구 보고서 생성 중...")
 
     try:
         response = await client.chat.completions.create(
             model=MODEL_PRO,
             messages=[
-                {"role": "system", "content": "你是数据科学研究员，输出 Markdown 格式研究报告。"},
+                {"role": "system", "content": "당신은 데이터 과학 연구원입니다. Markdown 형식의 연구 보고서를 출력하세요."},
                 {"role": "user", "content": prompt},
             ],
             max_completion_tokens=6000,
         )
         report_text = response.choices[0].message.content
 
-        # 添加头部元信息
+        # 헤더 메타 정보 추가
         header = f"""---
-title: NoteRx 数据研究报告
+title: NoteRx 데이터 연구 보고서
 date: {datetime.now().strftime('%Y-%m-%d')}
-method: 传统统计 (Track A) + LLM 深度分析 (Track B)
+method: 전통 통계 (Track A) + LLM 심층 분석 (Track B)
 model: {MODEL_PRO}
 ---
 
 """
 
-        # 添加图表引用
+        # 차트 참조 추가
         charts = list(CHARTS_DIR.glob("*.png"))
         if charts:
-            chart_section = "\n\n---\n\n## 附录：研究图表\n\n"
+            chart_section = "\n\n---\n\n## 부록: 연구 차트\n\n"
             for c in sorted(charts):
                 chart_section += f"### {c.stem}\n\n![{c.stem}](../../data/research_output/charts/{c.name})\n\n"
             report_text += chart_section
 
         out = OUTPUT_DIR / "final_research_report.md"
         out.write_text(header + report_text)
-        print(f"\n报告已生成: {out}")
-        print(f"报告长度: {len(report_text)} 字符")
+        print(f"\n보고서 생성 완료: {out}")
+        print(f"보고서 길이: {len(report_text)} 자")
 
     except Exception as e:
-        print(f"报告生成失败: {e}")
+        print(f"보고서 생성 실패: {e}")
 
     await client.close()
 

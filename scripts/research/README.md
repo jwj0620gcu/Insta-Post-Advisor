@@ -1,62 +1,62 @@
-# NoteRx 数据研究系统
+# NoteRx 데이터 연구 시스템
 
-## 研究目标
+## 연구 목표
 
-从真实小红书笔记和评论数据中，训练出两个「模型」（参数集 + 提示词），提升薯医诊断准确性：
+실제 Instagram 게시글 및 댓글 데이터에서 두 가지 「모델」(파라미터 집합 + 프롬프트)을 학습시켜 InstaRx 진단 정확도를 향상시킵니다:
 
-- **Model A：内容评分模型** — 预测笔记互动表现，输出维度评分参数
-- **Model B：用户画像模型** — 生成真实感评论，输出画像模板和评论生成提示词
+- **Model A: 콘텐츠 점수 모델** — 게시글 인터랙션 성과를 예측하고, 차원별 점수 파라미터를 출력
+- **Model B: 사용자 페르소나 모델** — 실감 나는 댓글을 생성하고, 페르소나 템플릿과 댓글 생성 프롬프트를 출력
 
-## 流程总览
+## 전체 흐름
 
 ```
-原始数据（xlsx/csv）
+원본 데이터 (xlsx/csv)
   │
-  ├─ 01_normalize.py ─────── 格式统一 → unified CSV + SQLite
-  ├─ 02_download_covers.py ─ 批量下载封面图片
-  ├─ 03_feature_engineering.py ── 衍生特征计算
+  ├─ 01_normalize.py ─────── 포맷 통일 → unified CSV + SQLite
+  ├─ 02_download_covers.py ─ 커버 이미지 일괄 다운로드
+  ├─ 03_feature_engineering.py ── 파생 피처 계산
   │
-  ├─── Track A: 传统统计 ─────────────────────────────────
-  │    ├─ 04_traditional_analysis.py  描述统计/相关性/回归
-  │    └─ 输出: stats/*.json + charts/*.png
+  ├─── Track A: 전통 통계 ─────────────────────────────────
+  │    ├─ 04_traditional_analysis.py  기술통계/상관관계/회귀
+  │    └─ 출력: stats/*.json + charts/*.png
   │
-  ├─── Track B: LLM 深度分析 ─────────────────────────────
-  │    ├─ 05_cover_vision.py    mimo-v2-omni 封面视觉理解
-  │    ├─ 06_content_llm.py     mimo-v2-pro 内容模式总结
-  │    └─ 输出: llm/*.json
+  ├─── Track B: LLM 심층 분석 ─────────────────────────────
+  │    ├─ 05_cover_vision.py    mimo-v2-omni 커버 비주얼 이해
+  │    ├─ 06_content_llm.py     mimo-v2-pro 콘텐츠 패턴 요약
+  │    └─ 출력: llm/*.json
   │
-  ├─── Track C: 用户画像 ─────────────────────────────────
-  │    ├─ 07_comment_persona.py  评论分类 + 画像生成
-  │    └─ 输出: personas/*.json
+  ├─── Track C: 사용자 페르소나 ─────────────────────────────────
+  │    ├─ 07_comment_persona.py  댓글 분류 + 페르소나 생성
+  │    └─ 출력: personas/*.json
   │
-  ├─ 08_build_scoring_model.py ── 合并双轨 → 评分参数
-  ├─ 09_generate_prompts.py ───── 生成增强版 Agent 提示词
-  ├─ 10_validate_model.py ─────── 用已知爆款反向验证
-  └─ 11_final_report.py ──────── 最终研究报告 + 可视化
+  ├─ 08_build_scoring_model.py ── 양 트랙 병합 → 점수 파라미터
+  ├─ 09_generate_prompts.py ───── 강화된 Agent 프롬프트 생성
+  ├─ 10_validate_model.py ─────── 알려진 바이럴 게시글로 역검증
+  └─ 11_final_report.py ──────── 최종 연구 보고서 + 시각화
 
-产出目录: data/research_output/
-研究日志: scripts/research/research_journal.md
+출력 디렉터리: data/research_output/
+연구 일지: scripts/research/research_journal.md
 ```
 
-## 运行方式
+## 실행 방법
 
 ```bash
-# 全流程（数据放在 data/帖子数据_待处理/ 和 data/评论数据/）
+# 전체 흐름 (데이터를 data/원시데이터_처리대기/ 와 data/댓글데이터/ 에 넣기)
 python3 scripts/research/run_all.py
 
-# 单步运行
+# 단계별 실행
 python3 scripts/research/01_normalize.py
 python3 scripts/research/04_traditional_analysis.py
 python3 scripts/research/05_cover_vision.py --category food
 # ...
 
-# 模型使用（三档）
-MODEL_FAST=mimo-v2-flash   # 评论快速分类，批量处理
-MODEL_PRO=mimo-v2-pro      # 1M上下文，内容模式总结，报告生成
-MODEL_OMNI=mimo-v2-omni    # 多模态，封面/视频视觉分析
+# 모델 사용 (3단계)
+MODEL_FAST=mimo-v2-flash   # 댓글 빠른 분류, 일괄 처리
+MODEL_PRO=mimo-v2-pro      # 1M 컨텍스트, 콘텐츠 패턴 요약, 보고서 생성
+MODEL_OMNI=mimo-v2-omni    # 멀티모달, 커버/동영상 비주얼 분석
 ```
 
-## 依赖
+## 의존성
 
 ```bash
 pip install openpyxl pandas numpy scipy scikit-learn matplotlib seaborn openai httpx

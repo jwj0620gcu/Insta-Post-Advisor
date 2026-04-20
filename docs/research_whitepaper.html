@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
-<title>薯医 NoteRx — 用数据科学拆解小红书的内容密码</title>
+<title>NoteRx — 데이터 과학으로 Instagram 인기 게시글의 비밀을 밝히다</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -143,44 +143,44 @@ footer .motto{color:rgba(255,255,255,0.6);font-size:0.9rem;margin:0.8rem 0}
 <!-- ━━ HERO ━━ -->
 <div class="hero">
   <div class="hero-inner">
-    <div class="badge">薯医 NoteRx</div>
-    <h1>用数据拆解<br>小红书的<span class="red">爆款密码</span></h1>
+    <div class="badge">NoteRx</div>
+    <h1>데이터로 밝혀낸<br>Instagram<span class="red">인기 게시글의 비밀</span></h1>
     <p class="sub">
-      <strong>传统回归聚类分析 + LLM 拆解内容逻辑</strong><br>
-      基于 <strong>874 条真实笔记 + 2465 条评论</strong>，双轨验证每一条诊断建议
+      <strong>전통 회귀·클러스터링 분석 + LLM 콘텐츠 로직 분석</strong><br>
+      <strong>874개의 실제 게시글 + 2465개의 댓글</strong>을 기반으로, 이중 검증된 진단 추천
     </p>
     <div class="nums" style="margin-top:2rem">
-      <div class="num-item"><div class="n" data-c="874">0</div><div class="l">真实笔记</div></div>
-      <div class="num-item"><div class="n" data-c="2465">0</div><div class="l">条评论</div></div>
-      <div class="num-item"><div class="n" data-c="5">0</div><div class="l">个品类</div></div>
-      <div class="num-item"><div class="n" data-c="5">0</div><div class="l">位 AI Agent</div></div>
+      <div class="num-item"><div class="n" data-c="874">0</div><div class="l">실제 게시글</div></div>
+      <div class="num-item"><div class="n" data-c="2465">0</div><div class="l">개 댓글</div></div>
+      <div class="num-item"><div class="n" data-c="5">0</div><div class="l">개 카테고리</div></div>
+      <div class="num-item"><div class="n" data-c="5">0</div><div class="l">AI Agent</div></div>
     </div>
     <div class="cta">
-      <a href="/app" onclick="return go(event)" class="btn btn-red">开始诊断笔记</a>
-      <a href="#about" class="btn btn-ghost">看看我们发现了什么 ↓</a>
+      <a href="/app" onclick="return go(event)" class="btn btn-red">게시글 진단 시작</a>
+      <a href="#about" class="btn btn-ghost">발견한 내용 보기 ↓</a>
     </div>
   </div>
-  <div class="scroll">↓ 向下探索</div>
+  <div class="scroll">↓ 아래로 탐색</div>
 </div>
 
 <!-- ━━ ABOUT ━━ -->
 <section id="about">
   <div class="rv">
     <div class="sec-tag">About</div>
-    <h2>不是拍脑袋，是数据说了算</h2>
+    <h2>직감이 아닌, 데이터가 말한다</h2>
     <p class="lead">
-      薯医不是又一个"AI 帮你写文案"的玩具。它是一套 <strong>5 个 AI Agent 多轮辩论</strong>的诊断系统——
-      内容分析师、视觉诊断师、增长策略师、用户模拟器、综合裁判，五个维度像专家会诊一样针锋相对，最终输出量化评分和可执行的优化方案。
+      NoteRx는 "AI가 문구 대신 써주는" 또 하나의 도구가 아닙니다. <strong>5개의 AI Agent가 다중 토론</strong>을 벌이는 진단 시스템입니다 —
+      콘텐츠 분석가, 비주얼 진단가, 성장 전략가, 사용자 시뮬레이터, 종합 심판이 전문가 회진처럼 맞대응하며, 최종적으로 정량 점수와 실행 가능한 최적화 방안을 도출합니다.
     </p>
     <p class="lead">
-      每一条诊断建议背后，都有 <strong>874 条真实小红书笔记 + 2465 条评论</strong>的数据支撑。
-      我们用 Spearman 相关、线性回归、K-Means 聚类、LLM 深度分析建立了品类差异化的评分基线——不猜，不编，用数据说话。
+      모든 진단 추천의 배경에는 <strong>874개의 실제 Instagram 게시글 + 2465개의 댓글</strong> 데이터가 있습니다.
+      Spearman 상관관계, 선형 회귀, K-Means 클러스터링, LLM 심층 분석으로 카테고리별 차별화된 평가 기준을 수립했습니다 — 추측도, 조작도 없이, 데이터로 말합니다.
     </p>
   </div>
   <div class="card-grid rv">
-    <div class="card"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff2442" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/><path d="M8 11h6M11 8v6"/></svg></div><h4>双轨分析</h4><p>传统统计 + LLM 深度分析，互相验证，互相补充</p></div>
-    <div class="card"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff2442" stroke-width="1.5"><rect x="3" y="8" width="18" height="12" rx="3"/><circle cx="9" cy="14" r="1.5" fill="#ff2442"/><circle cx="15" cy="14" r="1.5" fill="#ff2442"/><path d="M12 2v4M7 8V6M17 8V6"/></svg></div><h4>5 Agent 辩论</h4><p>三轮辩论：独立诊断 → 互相质疑 → 综合裁判</p></div>
-    <div class="card"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff2442" stroke-width="1.5"><rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="6" width="4" height="14" rx="1"/><rect x="17" y="2" width="4" height="18" rx="1"/></svg></div><h4>品类差异化</h4><p>美食靠标题、穿搭靠图片、旅游靠标签——一套标准不够用</p></div>
+    <div class="card"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff2442" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/><path d="M8 11h6M11 8v6"/></svg></div><h4>이중 트랙 분석</h4><p>전통 통계 + LLM 심층 분석, 상호 검증, 상호 보완</p></div>
+    <div class="card"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff2442" stroke-width="1.5"><rect x="3" y="8" width="18" height="12" rx="3"/><circle cx="9" cy="14" r="1.5" fill="#ff2442"/><circle cx="15" cy="14" r="1.5" fill="#ff2442"/><path d="M12 2v4M7 8V6M17 8V6"/></svg></div><h4>5 Agent 토론</h4><p>3라운드 토론: 독립 진단 → 상호 질의 → 종합 판정</p></div>
+    <div class="card"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff2442" stroke-width="1.5"><rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="6" width="4" height="14" rx="1"/><rect x="17" y="2" width="4" height="18" rx="1"/></svg></div><h4>카테고리 차별화</h4><p>맛집은 제목, 패션은 이미지, 여행은 태그 — 단일 기준으로는 부족</p></div>
   </div>
 </section>
 
@@ -189,18 +189,18 @@ footer .motto{color:rgba(255,255,255,0.6);font-size:0.9rem;margin:0.8rem 0}
   <div style="max-width:960px;margin:0 auto">
     <div class="rv">
       <div class="sec-tag">Process</div>
-      <h2>研究过程</h2>
-      <p>从数据采集到模型验证，48 小时内完成的完整数据科学研究。</p>
+      <h2>연구 과정</h2>
+      <p>데이터 수집부터 모델 검증까지, 48시간 내 완성된 완전한 데이터 과학 연구.</p>
     </div>
     <div class="tl rv">
-      <div class="tl-item"><div class="step">Step 1 · 数据采集</div><h4>874 条笔记 + 2465 条评论</h4><p>覆盖美食、穿搭、科技、旅游、生活 5 大品类。24 个 xlsx 文件自动导入，统一字段映射。</p></div>
-      <div class="tl-item"><div class="step">Step 2 · 传统统计</div><h4>7 种方法 × 5 个品类 = 35 组分析</h4><p>Spearman 相关 → 线性回归 → Kruskal-Wallis 检验 → K-Means 聚类 + PCA 可视化。</p></div>
-      <div class="tl-item"><div class="step">Step 3 · LLM 分析</div><h4>3 个模型 × 3 种维度</h4><p>mimo-v2-pro 分析内容模式，mimo-v2-omni 理解封面视觉，mimo-v2-flash 分类 2465 条评论。</p></div>
-      <div class="tl-item"><div class="step">Step 4 · 模型构建</div><h4>回归系数 → 品类权重 → 评分引擎</h4><p>将统计结果转化为 5 维度评分权重，每个品类独立参数，构建可运行的评分模型。</p></div>
-      <div class="tl-item"><div class="step">Step 5 · 验证</div><h4>Spearman 验证 + 25 条优化提示词</h4><p>lifestyle 品类 r=0.484***，生成 5 品类 × 5 Agent 的数据驱动提示词。</p></div>
+      <div class="tl-item"><div class="step">Step 1 · 데이터 수집</div><h4>874개 게시글 + 2465개 댓글</h4><p>맛집, 패션, 기술, 여행, 일상 5개 카테고리 포함. 24개 xlsx 파일 자동 가져오기, 통일된 필드 매핑.</p></div>
+      <div class="tl-item"><div class="step">Step 2 · 전통 통계</div><h4>7가지 방법 × 5개 카테고리 = 35개 분석</h4><p>Spearman 상관관계 → 선형 회귀 → Kruskal-Wallis 검정 → K-Means 클러스터링 + PCA 시각화.</p></div>
+      <div class="tl-item"><div class="step">Step 3 · LLM 분석</div><h4>3개 모델 × 3가지 차원</h4><p>mimo-v2-pro는 콘텐츠 패턴 분석, mimo-v2-omni는 커버 비주얼 이해, mimo-v2-flash는 2465개 댓글 분류.</p></div>
+      <div class="tl-item"><div class="step">Step 4 · 모델 구축</div><h4>회귀 계수 → 카테고리 가중치 → 평가 엔진</h4><p>통계 결과를 5차원 평가 가중치로 변환, 각 카테고리 독립 파라미터, 실행 가능한 평가 모델 구축.</p></div>
+      <div class="tl-item"><div class="step">Step 5 · 검증</div><h4>Spearman 검증 + 25개 최적화 프롬프트</h4><p>lifestyle 카테고리 r=0.484***, 5개 카테고리 × 5개 Agent의 데이터 기반 프롬프트 생성.</p></div>
     </div>
     <div class="rv" style="margin-top:1rem;padding:1rem 1.2rem;background:var(--red-light);border-radius:10px;font-size:0.82rem;color:var(--ink)">
-      <strong>数据来源声明</strong>：所有数据通过公开渠道采集（社媒助手工具），仅用于学术研究目的。数据已脱敏处理，不包含任何个人隐私信息。分析方法遵循统计学研究规范。
+      <strong>데이터 출처 선언</strong>: 모든 데이터는 공개 채널(소셜 미디어 보조 도구)을 통해 수집되었으며, 학술 연구 목적으로만 사용됩니다. 데이터는 비식별화 처리되었으며 개인 정보를 포함하지 않습니다. 분석 방법은 통계학 연구 기준을 준수합니다.
     </div>
   </div>
 </section>
@@ -210,9 +210,9 @@ footer .motto{color:rgba(255,255,255,0.6);font-size:0.9rem;margin:0.8rem 0}
   <div style="max-width:960px;margin:0 auto">
     <div class="rv">
       <div class="sec-tag" style="color:rgba(255,255,255,0.5)">Architecture</div>
-      <h2>工作原理：四阶段诊断引擎</h2>
+      <h2>작동 원리: 4단계 진단 엔진</h2>
       <p style="color:rgba(255,255,255,0.6)" class="lead">
-        从数据采集到最终报告，每一步都有 AI 参与。不是简单的"GPT 套壳"——是一套完整的<strong style="color:#fff">多智能体协同诊断系统</strong>。
+        데이터 수집부터 최종 보고서까지, 모든 단계에 AI가 참여합니다. 단순한 "GPT 래핑"이 아닙니다 — 완전한 <strong style="color:#fff">멀티 에이전트 협동 진단 시스템</strong>입니다.
       </p>
     </div>
 
@@ -223,52 +223,52 @@ footer .motto{color:rgba(255,255,255,0.6);font-size:0.9rem;margin:0.8rem 0}
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff2442" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 3v18"/></svg>
         </div>
         <div style="font-size:0.65rem;font-weight:700;color:var(--red);letter-spacing:0.1em;margin-bottom:0.3rem">STAGE 1</div>
-        <h4 style="color:#fff;font-size:1rem">数据训练</h4>
-        <p style="color:rgba(255,255,255,0.5);font-size:0.82rem">874 条真实笔记 + 2465 条评论<br>Spearman · 回归 · K-Means<br>5 品类差异化基线</p>
+        <h4 style="color:#fff;font-size:1rem">데이터 훈련</h4>
+        <p style="color:rgba(255,255,255,0.5);font-size:0.82rem">874개 실제 게시글 + 2465개 댓글<br>Spearman · 회귀 · K-Means<br>5개 카테고리 차별화 기준선</p>
       </div>
       <div class="card" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.08);text-align:center">
         <div style="font-size:2rem;margin-bottom:0.5rem">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff2442" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
         </div>
         <div style="font-size:0.65rem;font-weight:700;color:var(--red);letter-spacing:0.1em;margin-bottom:0.3rem">STAGE 2</div>
-        <h4 style="color:#fff;font-size:1rem">Model A 初评</h4>
-        <p style="color:rgba(255,255,255,0.5);font-size:0.82rem">回归系数 → 品类权重<br>5 维度即时打分 &lt;50ms<br>无 LLM 调用，纯数学</p>
+        <h4 style="color:#fff;font-size:1rem">Model A 사전 평가</h4>
+        <p style="color:rgba(255,255,255,0.5);font-size:0.82rem">회귀 계수 → 카테고리 가중치<br>5차원 즉시 점수 &lt;50ms<br>LLM 없이 순수 수학</p>
       </div>
       <div class="card" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.08);text-align:center">
         <div style="font-size:2rem;margin-bottom:0.5rem">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff2442" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><circle cx="8" cy="16" r="3"/><circle cx="16" cy="16" r="3"/><path d="M11 8h2M8 11v2M16 11v2M11 16h2"/></svg>
         </div>
         <div style="font-size:0.65rem;font-weight:700;color:var(--red);letter-spacing:0.1em;margin-bottom:0.3rem">STAGE 3</div>
-        <h4 style="color:#fff;font-size:1rem">多 Agent 辩论</h4>
-        <p style="color:rgba(255,255,255,0.5);font-size:0.82rem">4 Agent 并行诊断<br>交叉质疑 · 补充论据<br>裁判 Agent 综合裁定</p>
+        <h4 style="color:#fff;font-size:1rem">멀티 Agent 토론</h4>
+        <p style="color:rgba(255,255,255,0.5);font-size:0.82rem">4개 Agent 병렬 진단<br>교차 질의 · 논거 보강<br>심판 Agent 종합 판정</p>
       </div>
       <div class="card" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.08);text-align:center">
         <div style="font-size:2rem;margin-bottom:0.5rem">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff2442" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
         </div>
         <div style="font-size:0.65rem;font-weight:700;color:var(--red);letter-spacing:0.1em;margin-bottom:0.3rem">STAGE 4</div>
-        <h4 style="color:#fff;font-size:1rem">AI 闭环</h4>
-        <p style="color:rgba(255,255,255,0.5);font-size:0.82rem">LLM 参与数据清洗<br>AI 生成优化方案<br>评分重算验证效果</p>
+        <h4 style="color:#fff;font-size:1rem">AI 피드백 루프</h4>
+        <p style="color:rgba(255,255,255,0.5);font-size:0.82rem">LLM이 데이터 정제 참여<br>AI가 최적화 방안 생성<br>점수 재계산으로 효과 검증</p>
       </div>
     </div>
 
     <!-- Tech names -->
     <div class="rv" style="margin-top:2rem">
       <div class="quote" style="background:rgba(255,255,255,0.06);border-left-color:#ff2442;color:rgba(255,255,255,0.85)">
-        <strong style="color:#fff">Multi-Agent Collaborative Diagnosis Engine</strong> — 多智能体协同诊断引擎<br>
-        <strong style="color:#fff">Baseline Knowledge Graph</strong> — 品类基线知识图谱<br>
-        <strong style="color:#fff">Cross-Validation Debate Mechanism</strong> — 交叉验证辩论机制<br>
-        <strong style="color:#fff">AI-in-the-Loop Data Flywheel</strong> — AI 数据飞轮
+        <strong style="color:#fff">Multi-Agent Collaborative Diagnosis Engine</strong> — 멀티 에이전트 협동 진단 엔진<br>
+        <strong style="color:#fff">Baseline Knowledge Graph</strong> — 카테고리 기준선 지식 그래프<br>
+        <strong style="color:#fff">Cross-Validation Debate Mechanism</strong> — 교차 검증 토론 메커니즘<br>
+        <strong style="color:#fff">AI-in-the-Loop Data Flywheel</strong> — AI 데이터 플라이휠
       </div>
     </div>
 
     <!-- Key numbers -->
     <div style="display:flex;justify-content:center;gap:clamp(1.5rem,5vw,3rem);flex-wrap:wrap;margin-top:2rem" class="rv">
-      <div style="text-align:center"><div style="font-size:1.8rem;font-weight:900;color:var(--red)">874</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.4)">训练样本</div></div>
-      <div style="text-align:center"><div style="font-size:1.8rem;font-weight:900;color:var(--red)">5</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.4)">品类基线</div></div>
-      <div style="text-align:center"><div style="font-size:1.8rem;font-weight:900;color:var(--red)">4+1</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.4)">Agent 辩论</div></div>
-      <div style="text-align:center"><div style="font-size:1.8rem;font-weight:900;color:var(--red)">3</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.4)">轮辩论</div></div>
-      <div style="text-align:center"><div style="font-size:1.8rem;font-weight:900;color:var(--red)">&lt;50ms</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.4)">初评速度</div></div>
+      <div style="text-align:center"><div style="font-size:1.8rem;font-weight:900;color:var(--red)">874</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.4)">훈련 샘플</div></div>
+      <div style="text-align:center"><div style="font-size:1.8rem;font-weight:900;color:var(--red)">5</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.4)">카테고리 기준선</div></div>
+      <div style="text-align:center"><div style="font-size:1.8rem;font-weight:900;color:var(--red)">4+1</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.4)">Agent 토론</div></div>
+      <div style="text-align:center"><div style="font-size:1.8rem;font-weight:900;color:var(--red)">3</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.4)">라운드 토론</div></div>
+      <div style="text-align:center"><div style="font-size:1.8rem;font-weight:900;color:var(--red)">&lt;50ms</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.4)">사전 평가 속도</div></div>
     </div>
   </div>
 </section>

@@ -1,5 +1,5 @@
 """
-Baseline API 契约测试
+Baseline API 계약 테스트
 """
 import sqlite3
 import os
@@ -12,7 +12,7 @@ from app.baseline.comparator import BaselineComparator
 
 
 def _create_test_db():
-    """创建临时测试数据库"""
+    """임시 테스트 데이터베이스 생성"""
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
     conn = sqlite3.connect(path)
@@ -47,7 +47,7 @@ def _create_test_db():
 
 
 def test_get_category_stats():
-    """baseline 统计查询应返回正确结构"""
+    """baseline 통계 조회는 올바른 구조를 반환해야 한다"""
     db = _create_test_db()
     try:
         comp = BaselineComparator(db_path=db)
@@ -60,14 +60,14 @@ def test_get_category_stats():
 
 
 def test_compare_returns_comparisons():
-    """compare 应返回包含 comparisons 键的字典"""
+    """compare는 comparisons 키를 포함한 딕셔너리를 반환해야 한다"""
     db = _create_test_db()
     try:
         comp = BaselineComparator(db_path=db)
         result = comp.compare("food", {
             "title_length": 10,
             "tag_count": 3,
-            "tags": ["美食"],
+            "tags": ["맛집"],
         })
         assert "comparisons" in result
         assert "title_length" in result["comparisons"]
@@ -77,7 +77,7 @@ def test_compare_returns_comparisons():
 
 
 def test_compare_unknown_category():
-    """查询不存在的垂类应返回空 stats"""
+    """존재하지 않는 카테고리 조회 시 빈 stats를 반환해야 한다"""
     db = _create_test_db()
     try:
         comp = BaselineComparator(db_path=db)

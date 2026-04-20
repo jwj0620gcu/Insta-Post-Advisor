@@ -1,11 +1,11 @@
 """
-Step 4: LLM 深度分析 (Track B)
-封面视觉分析（omni）+ 内容模式总结（pro）+ 标签策略分析（pro）
+Step 4: LLM 심층 분석 (Track B)
+커버 비주얼 분석 (omni) + 콘텐츠 패턴 요약 (pro) + 태그 전략 분석 (pro)
 
 Usage:
     python scripts/research/04_llm_analysis.py [--covers] [--content] [--tags] [--all]
 
-依赖:
+의존성:
     pip install openai httpx
 """
 from __future__ import annotations
@@ -34,35 +34,35 @@ def get_client() -> AsyncOpenAI:
     return AsyncOpenAI(api_key=API_KEY, base_url=API_BASE, http_client=http_client)
 
 
-# ─── 4.1 封面视觉分析 ───
+# ─── 4.1 커버 비주얼 분석 ───
 
-COVER_PROMPT = """你是一个小红书封面视觉分析专家。请分析这张小红书笔记封面图片，输出 JSON 格式：
+COVER_PROMPT = """당신은 Instagram 커버 비주얼 분석 전문가입니다. 이 Instagram 게시글 커버 이미지를 분석하고 JSON 형식으로 출력하세요:
 
 {
-  "cover_style": "人物出镜/产品特写/场景图/拼图/纯文字/对比图/风景",
-  "color_tone": "暖色调/冷色调/中性/高饱和/低饱和",
-  "text_overlay": true或false,
-  "text_content": "封面上的文字内容，无文字则为空字符串",
-  "text_area_ratio": 0.0到1.0的数字,
-  "has_face": true或false,
-  "face_expression": "微笑/严肃/夸张/无",
-  "composition": "居中/三分法/对角线/留白/满铺",
-  "visual_quality": 1到10的整数,
-  "click_appeal": 1到10的整数,
-  "style_tags": ["标签1", "标签2"]
+  "cover_style": "인물등장/제품클로즈업/장면사진/콜라주/텍스트전용/비교사진/풍경",
+  "color_tone": "따뜻한색/차가운색/중성/고채도/저채도",
+  "text_overlay": true또는false,
+  "text_content": "커버의 텍스트 내용, 텍스트 없으면 빈 문자열",
+  "text_area_ratio": 0.0에서1.0사이의숫자,
+  "has_face": true또는false,
+  "face_expression": "미소/진지함/과장됨/없음",
+  "composition": "중앙배치/3분법/대각선/여백/꽉찬구도",
+  "visual_quality": 1에서10사이의정수,
+  "click_appeal": 1에서10사이의정수,
+  "style_tags": ["태그1", "태그2"]
 }
 
-只输出 JSON，不要其他内容。"""
+JSON만 출력하고 다른 내용은 포함하지 마세요."""
 
 
 async def analyze_cover(client: AsyncOpenAI, note_id: str, image_path: Path, semaphore: asyncio.Semaphore) -> dict | None:
-    """用 omni 模型分析单张封面"""
+    """omni 모델로 커버 이미지 한 장을 분석합니다"""
     async with semaphore:
         try:
             img_data = image_path.read_bytes()
             b64 = base64.b64encode(img_data).decode()
 
-            # 检测图片类型
+            # 이미지 형식 감지
             suffix = image_path.suffix.lower()
             mime = "image/webp" if suffix == ".webp" else "image/jpeg" if suffix in (".jpg", ".jpeg") else "image/png"
 
@@ -71,7 +71,7 @@ async def analyze_cover(client: AsyncOpenAI, note_id: str, image_path: Path, sem
                 messages=[
                     {"role": "system", "content": COVER_PROMPT},
                     {"role": "user", "content": [
-                        {"type": "text", "text": "请分析这张小红书笔记封面"},
+                        {"type": "text", "text": "이 Instagram 게시글 커버를 분석해 주세요"},
                         {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
                     ]},
                 ],
@@ -84,13 +84,13 @@ async def analyze_cover(client: AsyncOpenAI, note_id: str, image_path: Path, sem
             result["note_id"] = note_id
             return result
         except Exception as e:
-            print(f"  封面分析失败 {note_id}: {e}")
+            print(f"  커버 분석 실패 {note_id}: {e}")
             return None
 
 
 async def run_cover_analysis():
-    """批量分析封面"""
-    print("\n=== 4.1 封面视觉分析 (mimo-v2-omni) ===")
+    """커버 이미지 일괄 분석"""
+    print("\n=== 4.1 커버 비주얼 분석 (mimo-v2-omni) ===")
 
     conn = sqlite3.connect(RESEARCH_DB)
     cursor = conn.cursor()
@@ -119,7 +119,7 @@ async def run_cover_analysis():
         if not tasks:
             continue
 
-        print(f"  [{cat}] 分析 {len(tasks)} 张封面...")
+        print(f"  [{cat}] {len(tasks)}장의 커버 분석 중...")
 
         batch_size = 20
         cat_results = []
@@ -130,17 +130,17 @@ async def run_cover_analysis():
             for r in results:
                 if r:
                     cat_results.append(r)
-                    # 更新数据库
+                    # 데이터베이스 업데이트
                     cursor.execute(
                         "UPDATE research_notes SET cover_analysis=? WHERE note_id=?",
                         (json.dumps(r, ensure_ascii=False), r["note_id"])
                     )
             conn.commit()
-            print(f"    批次 {i//batch_size + 1}/{(len(tasks)-1)//batch_size + 1}: {sum(1 for r in results if r)}/{len(batch)} 成功")
+            print(f"    배치 {i//batch_size + 1}/{(len(tasks)-1)//batch_size + 1}: {sum(1 for r in results if r)}/{len(batch)} 성공")
 
         all_results[cat] = cat_results
 
-    # 保存汇总
+    # 결과 요약 저장
     out = LLM_DIR / "cover_analysis_all.json"
     out.write_text(json.dumps(all_results, ensure_ascii=False, indent=2))
     print(f"  → {out}")
@@ -150,33 +150,33 @@ async def run_cover_analysis():
     return all_results
 
 
-# ─── 4.2 内容模式分析 ───
+# ─── 4.2 콘텐츠 패턴 분석 ───
 
-CONTENT_PATTERN_PROMPT = """你是小红书内容研究专家。以下是 {category} 品类中的爆款笔记数据（标题和正文摘要）。
+CONTENT_PATTERN_PROMPT = """당신은 Instagram 콘텐츠 연구 전문가입니다. 아래는 {category} 카테고리의 인기 게시글 데이터(제목 및 본문 요약)입니다.
 
-请分析并总结，输出 JSON：
+분석하고 요약한 결과를 JSON으로 출력하세요:
 
 {{
   "title_patterns": [
-    {{"pattern_name": "模式名称", "template": "模板句式", "examples": ["示例1", "示例2"], "frequency": "高/中/低"}}
+    {{"pattern_name": "패턴 이름", "template": "템플릿 문장 형식", "examples": ["예시1", "예시2"], "frequency": "높음/중간/낮음"}}
   ],
   "content_structure": [
-    {{"type": "结构类型", "description": "描述", "typical_flow": ["段落1", "段落2", "..."]}}
+    {{"type": "구조 유형", "description": "설명", "typical_flow": ["단락1", "단락2", "..."]}}
   ],
-  "high_frequency_words": ["词1", "词2", ...],
-  "emotion_tone": "品类主流情绪基调",
-  "info_density": "高密度干货/中等/轻松随意",
-  "viral_vs_normal_diff": ["差异点1", "差异点2", ...],
-  "key_findings": ["发现1", "发现2", ...]
+  "high_frequency_words": ["단어1", "단어2", ...],
+  "emotion_tone": "카테고리 주류 감성 기조",
+  "info_density": "고밀도 정보/중간/가벼운 일상",
+  "viral_vs_normal_diff": ["차이점1", "차이점2", ...],
+  "key_findings": ["발견1", "발견2", ...]
 }}
 
-笔记数据：
+게시글 데이터:
 {notes_json}"""
 
 
 async def run_content_analysis():
-    """每品类的内容模式分析"""
-    print("\n=== 4.2 内容模式分析 (mimo-v2-pro) ===")
+    """카테고리별 콘텐츠 패턴 분석"""
+    print("\n=== 4.2 콘텐츠 패턴 분석 (mimo-v2-pro) ===")
 
     conn = sqlite3.connect(RESEARCH_DB)
     cursor = conn.cursor()
@@ -184,7 +184,7 @@ async def run_content_analysis():
 
     results = {}
     for cat in ALL_CATEGORIES:
-        # 取爆款 + 部分普通笔记
+        # 인기 게시글 + 일부 일반 게시글 가져오기
         cursor.execute("""
             SELECT title, SUBSTR(content, 1, 200) as excerpt, engagement, is_viral
             FROM research_notes WHERE category=? AND title != ''
@@ -204,12 +204,12 @@ async def run_content_analysis():
             notes_json=json.dumps(notes_data, ensure_ascii=False, indent=1)
         )
 
-        print(f"  [{cat}] 分析 {len(rows)} 条笔记内容模式...")
+        print(f"  [{cat}] {len(rows)}개 게시글 콘텐츠 패턴 분석 중...")
         try:
             response = await client.chat.completions.create(
                 model=MODEL_PRO,
                 messages=[
-                    {"role": "system", "content": "你是数据分析专家，只输出 JSON。"},
+                    {"role": "system", "content": "당신은 데이터 분석 전문가입니다. JSON만 출력하세요."},
                     {"role": "user", "content": prompt},
                 ],
                 max_completion_tokens=3000,
@@ -219,9 +219,9 @@ async def run_content_analysis():
                 raw = raw.split("\n", 1)[1].rsplit("```", 1)[0]
             result = json.loads(raw)
             results[cat] = result
-            print(f"    发现 {len(result.get('title_patterns', []))} 种标题模式")
+            print(f"    {len(result.get('title_patterns', []))}가지 제목 패턴 발견")
         except Exception as e:
-            print(f"    失败: {e}")
+            print(f"    실패: {e}")
 
     out = LLM_DIR / "content_patterns.json"
     out.write_text(json.dumps(results, ensure_ascii=False, indent=2))
@@ -232,26 +232,26 @@ async def run_content_analysis():
     return results
 
 
-# ─── 4.3 标签策略分析 ───
+# ─── 4.3 태그 전략 분석 ───
 
-TAG_ANALYSIS_PROMPT = """分析以下 {category} 品类笔记的标签使用策略。数据包含每条笔记的标签列表和互动数据。
+TAG_ANALYSIS_PROMPT = """다음 {category} 카테고리 게시글의 태그 사용 전략을 분석하세요. 데이터에는 각 게시글의 태그 목록과 인터랙션 데이터가 포함되어 있습니다.
 
-请输出 JSON：
+JSON으로 출력하세요:
 {{
-  "top_tags": [{{"tag": "标签", "count": 数量, "avg_engagement": 平均互动}}],
-  "hidden_gems": [{{"tag": "长尾标签", "avg_engagement": 平均互动, "note_count": 使用数量}}],
-  "best_combinations": [{{"tags": ["标签1", "标签2", "标签3"], "avg_engagement": 平均互动}}],
-  "optimal_tag_count": {{"min": 最少, "max": 最多, "best": 最佳}},
-  "strategy_advice": ["建议1", "建议2", ...]
+  "top_tags": [{{"tag": "태그", "count": 수량, "avg_engagement": 평균인터랙션}}],
+  "hidden_gems": [{{"tag": "롱테일태그", "avg_engagement": 평균인터랙션, "note_count": 사용수량}}],
+  "best_combinations": [{{"tags": ["태그1", "태그2", "태그3"], "avg_engagement": 평균인터랙션}}],
+  "optimal_tag_count": {{"min": 최소, "max": 최대, "best": 최적}},
+  "strategy_advice": ["조언1", "조언2", ...]
 }}
 
-数据：
+데이터:
 {data_json}"""
 
 
 async def run_tag_analysis():
-    """标签策略分析"""
-    print("\n=== 4.3 标签策略分析 (mimo-v2-pro) ===")
+    """태그 전략 분석"""
+    print("\n=== 4.3 태그 전략 분석 (mimo-v2-pro) ===")
 
     conn = sqlite3.connect(RESEARCH_DB)
     cursor = conn.cursor()
@@ -277,12 +277,12 @@ async def run_tag_analysis():
             data_json=json.dumps(data[:100], ensure_ascii=False, indent=1)  # 限制大小
         )
 
-        print(f"  [{cat}] 分析 {len(rows)} 条笔记标签策略...")
+        print(f"  [{cat}] {len(rows)}개 게시글 태그 전략 분석 중...")
         try:
             response = await client.chat.completions.create(
                 model=MODEL_PRO,
                 messages=[
-                    {"role": "system", "content": "你是数据分析专家，只输出 JSON。"},
+                    {"role": "system", "content": "당신은 데이터 분석 전문가입니다. JSON만 출력하세요."},
                     {"role": "user", "content": prompt},
                 ],
                 max_completion_tokens=2000,
@@ -292,9 +292,9 @@ async def run_tag_analysis():
                 raw = raw.split("\n", 1)[1].rsplit("```", 1)[0]
             result = json.loads(raw)
             results[cat] = result
-            print(f"    最佳标签数: {result.get('optimal_tag_count', {}).get('best', '?')}")
+            print(f"    최적 태그 수: {result.get('optimal_tag_count', {}).get('best', '?')}")
         except Exception as e:
-            print(f"    失败: {e}")
+            print(f"    실패: {e}")
 
     out = LLM_DIR / "tag_analysis.json"
     out.write_text(json.dumps(results, ensure_ascii=False, indent=2))
@@ -308,18 +308,18 @@ async def run_tag_analysis():
 # ─── Main ───
 
 async def main():
-    parser = argparse.ArgumentParser(description="LLM 深度分析")
-    parser.add_argument("--covers", action="store_true", help="运行封面视觉分析")
-    parser.add_argument("--content", action="store_true", help="运行内容模式分析")
-    parser.add_argument("--tags", action="store_true", help="运行标签策略分析")
-    parser.add_argument("--all", action="store_true", help="运行全部分析")
+    parser = argparse.ArgumentParser(description="LLM 심층 분석")
+    parser.add_argument("--covers", action="store_true", help="커버 비주얼 분석 실행")
+    parser.add_argument("--content", action="store_true", help="콘텐츠 패턴 분석 실행")
+    parser.add_argument("--tags", action="store_true", help="태그 전략 분석 실행")
+    parser.add_argument("--all", action="store_true", help="전체 분석 실행")
     args = parser.parse_args()
 
     if not any([args.covers, args.content, args.tags, args.all]):
         args.all = True
 
     print("=" * 60)
-    print("Step 4: LLM 深度分析 (Track B)")
+    print("Step 4: LLM 심층 분석 (Track B)")
     print("=" * 60)
 
     if args.covers or args.all:
@@ -330,7 +330,7 @@ async def main():
         await run_tag_analysis()
 
     print("\n" + "=" * 60)
-    print(f"Track B 完成! 结果保存在: {LLM_DIR}")
+    print(f"Track B 완료! 결과 저장 위치: {LLM_DIR}")
     print("=" * 60)
 
 

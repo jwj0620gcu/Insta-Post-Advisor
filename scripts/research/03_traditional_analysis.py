@@ -1,11 +1,11 @@
 """
-Step 3: 传统统计分析 (Track A)
-描述统计、相关性分析、回归建模、聚类、可视化
+Step 3: 전통 통계 분석 (Track A)
+기술통계, 상관관계 분석, 회귀 모델링, 클러스터링, 시각화
 
 Usage:
     python scripts/research/03_traditional_analysis.py
 
-依赖:
+의존성:
     pip install pandas numpy scipy scikit-learn matplotlib seaborn
 """
 import sqlite3
@@ -32,19 +32,19 @@ from config import RESEARCH_DB, CHARTS_DIR, STATS_DIR, ALL_CATEGORIES, FAN_BUCKE
 
 
 def load_data() -> pd.DataFrame:
-    """从 research.db 加载数据"""
+    """research.db에서 데이터를 로드합니다"""
     conn = sqlite3.connect(RESEARCH_DB)
     df = pd.read_sql_query("SELECT * FROM research_notes", conn)
     conn.close()
-    print(f"加载 {len(df)} 条笔记数据")
+    print(f"{len(df)}건의 게시글 데이터를 로드했습니다")
     return df
 
 
-# ─── 3.1 描述性统计 ───
+# ─── 3.1 기술 통계 ───
 
 def descriptive_stats(df: pd.DataFrame):
-    """各品类描述性统计"""
-    print("\n=== 3.1 描述性统计 ===")
+    """카테고리별 기술 통계"""
+    print("\n=== 3.1 기술 통계 ===")
     metrics = ["likes", "collects", "comments_count", "shares", "engagement",
                "title_length", "content_length", "tag_count", "image_count"]
 
@@ -64,7 +64,7 @@ def descriptive_stats(df: pd.DataFrame):
                 "p90": round(float(vals.quantile(0.90)), 2),
             }
 
-        # 爆款 vs 普通对比
+        # 바이럴 vs 일반 비교
         viral = sub[sub["is_viral"] == 1]
         normal = sub[sub["is_viral"] == 0]
         cat_stats["viral_vs_normal"] = {}
@@ -74,7 +74,7 @@ def descriptive_stats(df: pd.DataFrame):
                 "normal_mean": round(float(normal[m].mean()), 2) if len(normal) > 0 else 0,
             }
 
-        # 图文 vs 视频
+        # 이미지 vs 동영상
         img = sub[sub["note_type"] == "image"]
         vid = sub[sub["note_type"] == "video"]
         cat_stats["image_vs_video"] = {
@@ -85,7 +85,7 @@ def descriptive_stats(df: pd.DataFrame):
         }
 
         all_stats[cat] = cat_stats
-        print(f"  [{cat}] {len(sub)} 条, 爆款 {int(sub['is_viral'].sum())} 条")
+        print(f"  [{cat}] {len(sub)}건, 바이럴 {int(sub['is_viral'].sum())}건")
 
     out = STATS_DIR / "descriptive_stats.json"
     out.write_text(json.dumps(all_stats, ensure_ascii=False, indent=2))
@@ -99,8 +99,8 @@ def descriptive_stats(df: pd.DataFrame):
         if data:
             bp = ax.boxplot(data, labels=cats, showfliers=False)
             ax.set_title(m)
-            ax.set_ylabel("数量")
-    plt.suptitle("各品类互动量分布", fontsize=14, fontweight="bold")
+            ax.set_ylabel("수량")
+    plt.suptitle("카테고리별 인터랙션 분포", fontsize=14, fontweight="bold")
     plt.tight_layout()
     plt.savefig(CHARTS_DIR / "boxplot_engagement.png", dpi=150)
     plt.close()
@@ -108,17 +108,17 @@ def descriptive_stats(df: pd.DataFrame):
     return all_stats
 
 
-# ─── 3.2 相关性分析 ───
+# ─── 3.2 상관관계 분석 ───
 
 def correlation_analysis(df: pd.DataFrame):
-    """变量间相关性分析"""
-    print("\n=== 3.2 相关性分析 ===")
+    """변수 간 상관관계 분석"""
+    print("\n=== 3.2 상관관계 분석 ===")
     numeric_cols = ["title_length", "content_length", "tag_count", "image_count",
                     "has_numbers", "has_emoji", "title_hook_count",
                     "likes", "collects", "comments_count", "shares", "engagement"]
     sub = df[numeric_cols].dropna()
 
-    # Spearman 相关系数
+    # Spearman 상관계수
     corr_matrix = sub.corr(method="spearman")
     result = {}
     for col in numeric_cols:
@@ -144,7 +144,7 @@ def correlation_analysis(df: pd.DataFrame):
             ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=7,
                     color="white" if abs(v) > 0.5 else "black")
     plt.colorbar(im, ax=ax, shrink=0.8)
-    plt.title("变量相关性矩阵 (Spearman)", fontsize=13, fontweight="bold")
+    plt.title("변수 상관관계 행렬 (Spearman)", fontsize=13, fontweight="bold")
     plt.tight_layout()
     plt.savefig(CHARTS_DIR / "correlation_heatmap.png", dpi=150)
     plt.close()
@@ -153,11 +153,11 @@ def correlation_analysis(df: pd.DataFrame):
     return result
 
 
-# ─── 3.3 回归分析 ───
+# ─── 3.3 회귀 분석 ───
 
 def regression_analysis(df: pd.DataFrame):
-    """控制粉丝量后的多元回归"""
-    print("\n=== 3.3 回归分析 ===")
+    """팔로워 수 통제 후 다중 회귀"""
+    print("\n=== 3.3 회귀 분석 ===")
     features = ["title_length", "tag_count", "has_numbers", "image_count",
                 "content_length", "has_emoji", "title_hook_count"]
 
@@ -198,10 +198,10 @@ def regression_analysis(df: pd.DataFrame):
             ax.bar(x + i * width, coefs, width, label=cat, alpha=0.8)
         ax.set_xticks(x + width * len(cats) / 2)
         ax.set_xticklabels(features, rotation=30, ha="right", fontsize=9)
-        ax.set_ylabel("标准化系数")
+        ax.set_ylabel("표준화 계수")
         ax.legend(fontsize=9)
         ax.axhline(y=0, color="black", linewidth=0.5)
-        plt.title("各因素对互动量的影响（控制粉丝量后）", fontsize=13, fontweight="bold")
+        plt.title("각 요소가 인터랙션에 미치는 영향 (팔로워 수 통제 후)", fontsize=13, fontweight="bold")
         plt.tight_layout()
         plt.savefig(CHARTS_DIR / "regression_coefficients.png", dpi=150)
         plt.close()
@@ -209,11 +209,11 @@ def regression_analysis(df: pd.DataFrame):
     return results
 
 
-# ─── 3.4 品类差异分析 ───
+# ─── 3.4 카테고리 차이 분석 ───
 
 def category_comparison(df: pd.DataFrame):
-    """品类间差异对比"""
-    print("\n=== 3.4 品类差异分析 ===")
+    """카테고리 간 차이 비교"""
+    print("\n=== 3.4 카테고리 차이 분석 ===")
     metrics = ["title_length", "tag_count", "content_length", "image_count", "engagement"]
 
     results = {}
@@ -230,7 +230,7 @@ def category_comparison(df: pd.DataFrame):
     out = STATS_DIR / "category_comparison.json"
     out.write_text(json.dumps(results, ensure_ascii=False, indent=2))
 
-    # 品类最优参数雷达图
+    # 카테고리 최적 파라미터 레이더 차트
     cats = [c for c in df["category"].unique() if len(df[df["category"] == c]) >= 10]
     if cats:
         radar_data = {}
@@ -250,7 +250,7 @@ def category_comparison(df: pd.DataFrame):
             ax.fill(angles, v, alpha=0.1)
         ax.set_thetagrids(np.degrees(angles[:-1]), dims, fontsize=10)
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.0), fontsize=8)
-        plt.title("各品类爆款参数对比", fontsize=13, fontweight="bold", pad=20)
+        plt.title("카테고리별 바이럴 파라미터 비교", fontsize=13, fontweight="bold", pad=20)
         plt.tight_layout()
         plt.savefig(CHARTS_DIR / "category_radar.png", dpi=150)
         plt.close()
@@ -258,17 +258,17 @@ def category_comparison(df: pd.DataFrame):
     return results
 
 
-# ─── 3.5 发布时段分析 ───
+# ─── 3.5 게시 시간대 분석 ───
 
 def time_analysis(df: pd.DataFrame):
-    """发布时段 × 互动量热力图"""
-    print("\n=== 3.5 发布时段分析 ===")
+    """게시 시간대 × 인터랙션 히트맵"""
+    print("\n=== 3.5 게시 시간대 분석 ===")
     sub = df.dropna(subset=["publish_hour", "publish_weekday"])
     if len(sub) == 0:
-        print("  无时间数据，跳过")
+        print("  시간 데이터 없음, 건너뜀")
         return {}
 
-    # 时段 × 星期 热力图
+    # 시간대 × 요일 히트맵
     pivot = sub.pivot_table(values="engagement", index="publish_weekday",
                             columns="publish_hour", aggfunc="mean", fill_value=0)
 
@@ -277,15 +277,15 @@ def time_analysis(df: pd.DataFrame):
     ax.set_xticks(range(len(pivot.columns)))
     ax.set_xticklabels([f"{int(h)}:00" for h in pivot.columns], fontsize=8, rotation=45)
     ax.set_yticks(range(len(pivot.index)))
-    ax.set_yticklabels(["周一", "周二", "周三", "周四", "周五", "周六", "周日"][:len(pivot.index)], fontsize=10)
-    plt.colorbar(im, ax=ax, shrink=0.8, label="平均互动量")
-    plt.title("发布时段 × 星期 平均互动量", fontsize=13, fontweight="bold")
+    ax.set_yticklabels(["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"][:len(pivot.index)], fontsize=10)
+    plt.colorbar(im, ax=ax, shrink=0.8, label="평균 인터랙션")
+    plt.title("게시 시간대 × 요일 평균 인터랙션", fontsize=13, fontweight="bold")
     plt.tight_layout()
     plt.savefig(CHARTS_DIR / "time_heatmap.png", dpi=150)
     plt.close()
     print(f"  → {CHARTS_DIR / 'time_heatmap.png'}")
 
-    # 最佳时段
+    # 최적 시간대
     best = {}
     for cat in sub["category"].unique():
         cat_sub = sub[sub["category"] == cat]
@@ -299,16 +299,16 @@ def time_analysis(df: pd.DataFrame):
     return best
 
 
-# ─── 3.6 聚类分析 ───
+# ─── 3.6 클러스터링 분석 ───
 
 def cluster_analysis(df: pd.DataFrame):
-    """笔记聚类分群"""
-    print("\n=== 3.6 聚类分析 ===")
+    """게시글 클러스터링 분류"""
+    print("\n=== 3.6 클러스터링 분석 ===")
     features = ["title_length", "tag_count", "image_count", "content_length",
                 "has_numbers", "title_hook_count"]
     sub = df[features + ["engagement", "category", "is_viral"]].dropna()
     if len(sub) < 30:
-        print("  数据不足，跳过聚类")
+        print("  데이터 부족, 클러스터링 건너뜀")
         return {}
 
     X = sub[features].values
@@ -330,16 +330,16 @@ def cluster_analysis(df: pd.DataFrame):
     scatter = ax.scatter(X_2d[:, 0], X_2d[:, 1], c=labels, cmap="Set2",
                          s=sub["engagement"].values / (sub["engagement"].max() / 100 + 1) + 10,
                          alpha=0.6, edgecolors="white", linewidth=0.5)
-    plt.colorbar(scatter, ax=ax, label="聚类")
+    plt.colorbar(scatter, ax=ax, label="클러스터")
     ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]*100:.1f}%)")
     ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]*100:.1f}%)")
-    plt.title("笔记聚类分群（PCA降维）", fontsize=13, fontweight="bold")
+    plt.title("게시글 클러스터링 분류 (PCA 차원 축소)", fontsize=13, fontweight="bold")
     plt.tight_layout()
     plt.savefig(CHARTS_DIR / "cluster_pca.png", dpi=150)
     plt.close()
     print(f"  → {CHARTS_DIR / 'cluster_pca.png'}")
 
-    # 聚类特征
+    # 클러스터 특성
     sub_with_labels = sub.copy()
     sub_with_labels["cluster"] = labels
     cluster_profiles = {}
@@ -351,7 +351,7 @@ def cluster_analysis(df: pd.DataFrame):
             "viral_rate": round(float(cl_sub["is_viral"].mean()) * 100, 1),
             "features": {f: round(float(cl_sub[f].mean()), 2) for f in features},
         }
-        print(f"  聚类 {cl}: {len(cl_sub)} 条, 平均互动={cluster_profiles[int(cl)]['avg_engagement']:.0f}")
+        print(f"  클러스터 {cl}: {len(cl_sub)}건, 평균 인터랙션={cluster_profiles[int(cl)]['avg_engagement']:.0f}")
 
     out = STATS_DIR / "cluster_profiles.json"
     out.write_text(json.dumps(cluster_profiles, ensure_ascii=False, indent=2))
@@ -360,12 +360,12 @@ def cluster_analysis(df: pd.DataFrame):
 
 def main():
     print("=" * 60)
-    print("Step 3: 传统统计分析 (Track A)")
+    print("Step 3: 전통 통계 분석 (Track A)")
     print("=" * 60)
 
     df = load_data()
     if len(df) == 0:
-        print("无数据！请先运行 01_import_data.py")
+        print("데이터 없음! 먼저 01_import_data.py를 실행하세요")
         return
 
     desc = descriptive_stats(df)
@@ -375,7 +375,7 @@ def main():
     time = time_analysis(df)
     clusters = cluster_analysis(df)
 
-    # 汇总
+    # 요약
     summary = {
         "total_notes": len(df),
         "categories": list(df["category"].unique()),
@@ -385,9 +385,9 @@ def main():
     (STATS_DIR / "track_a_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))
 
     print("\n" + "=" * 60)
-    print(f"Track A 完成! 生成 {len(list(CHARTS_DIR.glob('*.png')))} 张图表")
-    print(f"统计结果: {STATS_DIR}")
-    print(f"图表: {CHARTS_DIR}")
+    print(f"Track A 완료! {len(list(CHARTS_DIR.glob('*.png')))}장의 차트 생성됨")
+    print(f"통계 결과: {STATS_DIR}")
+    print(f"차트: {CHARTS_DIR}")
     print("=" * 60)
 
 

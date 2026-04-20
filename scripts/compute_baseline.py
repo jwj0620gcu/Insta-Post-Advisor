@@ -1,5 +1,5 @@
 """
-基于 notes 表数据，预计算各垂类的 baseline 统计指标并写入 baseline_stats 表。
+notes 테이블 데이터를 기반으로 각 카테고리의 baseline 통계 지표를 사전 계산하여 baseline_stats 테이블에 저장합니다.
 
 Usage:
     python scripts/compute_baseline.py
@@ -13,7 +13,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "..", "backend", "data", "base
 
 
 def upsert_stat(cursor, category, metric_name, metric_value=None, metric_json=None):
-    """插入或更新一条统计指标"""
+    """통계 지표 하나를 삽입하거나 업데이트합니다"""
     cursor.execute("""
         INSERT INTO baseline_stats (category, metric_name, metric_value, metric_json)
         VALUES (?, ?, ?, ?)
@@ -25,9 +25,9 @@ def upsert_stat(cursor, category, metric_name, metric_value=None, metric_json=No
 
 
 def compute_for_category(cursor, category):
-    """计算指定垂类的所有 baseline 指标"""
+    """지정된 카테고리의 모든 baseline 지표를 계산합니다"""
 
-    # --- 标题统计 ---
+    # --- 제목 통계 ---
     cursor.execute(
         "SELECT AVG(title_length) FROM notes WHERE category=?", (category,)
     )
@@ -41,7 +41,7 @@ def compute_for_category(cursor, category):
     viral_avg_title_len = cursor.fetchone()[0] or 0
     upsert_stat(cursor, category, "viral_avg_title_length", round(viral_avg_title_len, 1))
 
-    # --- 标签统计 ---
+    # --- 태그 통계 ---
     cursor.execute("SELECT tags FROM notes WHERE category=?", (category,))
     tag_counter = Counter()
     tag_counts = []
@@ -59,7 +59,7 @@ def compute_for_category(cursor, category):
     top_tags = [{"tag": t, "count": c} for t, c in tag_counter.most_common(20)]
     upsert_stat(cursor, category, "top_tags", metric_json=json.dumps(top_tags, ensure_ascii=False))
 
-    # --- 互动数据 ---
+    # --- 인터랙션 데이터 ---
     for metric in ["likes", "collects", "comments"]:
         cursor.execute(
             f"SELECT AVG({metric}), MAX({metric}) FROM notes WHERE category=?",
@@ -76,7 +76,7 @@ def compute_for_category(cursor, category):
         viral_avg = cursor.fetchone()[0] or 0
         upsert_stat(cursor, category, f"viral_avg_{metric}", round(viral_avg, 1))
 
-    # --- 发布时间分布 ---
+    # --- 게시 시간 분포 ---
     cursor.execute("""
         SELECT publish_hour, COUNT(*) as cnt,
                AVG(likes + collects + comments) as avg_engagement
@@ -90,7 +90,7 @@ def compute_for_category(cursor, category):
     upsert_stat(cursor, category, "hour_distribution",
                 metric_json=json.dumps(hour_dist, ensure_ascii=False))
 
-    # --- 封面统计 ---
+    # --- 커버 통계 ---
     cursor.execute(
         "SELECT AVG(cover_has_face), AVG(cover_text_ratio), AVG(cover_saturation) "
         "FROM notes WHERE category=?",
@@ -111,7 +111,7 @@ def compute_for_category(cursor, category):
     upsert_stat(cursor, category, "viral_cover_avg_text_ratio", round(vt or 0, 3))
     upsert_stat(cursor, category, "viral_cover_avg_saturation", round(vs or 0, 3))
 
-    # --- 爆款率 ---
+    # --- 바이럴 비율 ---
     cursor.execute(
         "SELECT COUNT(*) FROM notes WHERE category=? AND is_viral=1", (category,)
     )
@@ -121,7 +121,7 @@ def compute_for_category(cursor, category):
     viral_rate = (viral_count / total_count * 100) if total_count else 0
     upsert_stat(cursor, category, "viral_rate", round(viral_rate, 1))
 
-    # --- 粉丝分层统计 ---
+    # --- 팔로워 계층별 통계 ---
     fan_buckets = [
         ("nano", 0, 1000),
         ("micro", 1000, 10000),
@@ -146,7 +146,7 @@ def compute_for_category(cursor, category):
     upsert_stat(cursor, category, "fan_bucket_stats",
                 metric_json=json.dumps(fan_stats, ensure_ascii=False))
 
-    # --- 标签数量分桶 vs 互动率 ---
+    # --- 태그 수 구간별 vs 인터랙션율 ---
     cursor.execute("""
         SELECT tags, likes + collects + comments as eng
         FROM notes WHERE category=?
@@ -171,11 +171,11 @@ def compute_for_category(cursor, category):
     upsert_stat(cursor, category, "tag_count_vs_engagement",
                 metric_json=json.dumps(tag_bucket_stats, ensure_ascii=False))
 
-    print(f"  [{category}] 已计算 baseline 指标（含粉丝分层与标签分桶）")
+    print(f"  [{category}] baseline 지표 계산 완료 (팔로워 계층 및 태그 구간 포함)")
 
 
 def main():
-    """计算所有垂类的 baseline 统计指标"""
+    """모든 카테고리의 baseline 통계 지표를 계산합니다"""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
@@ -186,7 +186,7 @@ def main():
 
     conn.commit()
     conn.close()
-    print("所有 baseline 统计指标已计算完毕")
+    print("모든 baseline 통계 지표 계산이 완료되었습니다")
 
 
 if __name__ == "__main__":

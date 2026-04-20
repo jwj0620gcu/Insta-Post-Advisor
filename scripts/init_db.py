@@ -1,5 +1,5 @@
 """
-初始化 SQLite 数据库，创建 baseline 数据表结构。
+SQLite 데이터베이스를 초기화하고 baseline 데이터 테이블 구조를 생성합니다.
 
 Usage:
     python scripts/init_db.py
@@ -11,7 +11,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "..", "backend", "data", "base
 
 
 def init_database():
-    """创建数据库表结构"""
+    """데이터베이스 테이블 구조를 생성합니다"""
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -19,17 +19,17 @@ def init_database():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS notes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            category TEXT NOT NULL,         -- food / fashion / tech
+            category TEXT NOT NULL,         -- food / fashion / tech (카테고리)
             title TEXT NOT NULL,
             title_length INTEGER,
             content TEXT,
-            tags TEXT,                      -- JSON array
-            publish_hour INTEGER,           -- 0-23
+            tags TEXT,                      -- JSON array (태그 배열)
+            publish_hour INTEGER,           -- 0-23 (게시 시간)
             likes INTEGER DEFAULT 0,
             collects INTEGER DEFAULT 0,
             comments INTEGER DEFAULT 0,
             followers INTEGER DEFAULT 0,
-            is_viral INTEGER DEFAULT 0,     -- 1=爆款, 0=普通
+            is_viral INTEGER DEFAULT 0,     -- 1=바이럴, 0=일반
             cover_has_face INTEGER DEFAULT 0,
             cover_text_ratio REAL DEFAULT 0,
             cover_saturation REAL DEFAULT 0,
@@ -41,9 +41,9 @@ def init_database():
         CREATE TABLE IF NOT EXISTS baseline_stats (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             category TEXT NOT NULL,
-            metric_name TEXT NOT NULL,       -- e.g. avg_title_length
+            metric_name TEXT NOT NULL,       -- 예: avg_title_length
             metric_value REAL,
-            metric_json TEXT,                -- JSON for complex metrics
+            metric_json TEXT,                -- 복합 지표용 JSON
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(category, metric_name)
         )
@@ -75,7 +75,7 @@ def init_database():
 
     conn.commit()
     conn.close()
-    print(f"数据库已初始化: {os.path.abspath(DB_PATH)}")
+    print(f"데이터베이스가 초기화되었습니다: {os.path.abspath(DB_PATH)}")
 
 
 if __name__ == "__main__":

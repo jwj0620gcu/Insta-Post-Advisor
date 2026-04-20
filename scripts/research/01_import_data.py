@@ -1,6 +1,6 @@
 """
-Step 1: 数据导入与清洗
-递归扫描 data/原始数据/ 所有子目录，自动识别笔记/评论文件，统一格式后写入 research.db，并导出 CSV。
+Step 1: 데이터 가져오기 및 정제
+data/원시데이터/ 의 모든 하위 디렉터리를 재귀적으로 스캔하고, 게시글/댓글 파일을 자동 식별하여 포맷 통일 후 research.db에 저장하고 CSV로 내보냅니다.
 
 Usage:
     python scripts/research/01_import_data.py
@@ -108,7 +108,7 @@ def detect_category(filename: str) -> str | None:
 
 
 def detect_category_from_keyword(keyword: str) -> str | None:
-    """从第二批数据的'来源关键词'列推断品类"""
+    """두 번째 배치 데이터의 '출처 키워드' 열에서 카테고리를 추론합니다"""
     if not keyword:
         return None
     kw = str(keyword).strip()
@@ -129,7 +129,7 @@ def detect_category_from_keyword(keyword: str) -> str | None:
 
 
 def detect_category_from_content(title: str, tags: str, content: str) -> str | None:
-    """从标题/话题/内容推断品类（兜底）"""
+    """제목/주제/콘텐츠에서 카테고리를 추론합니다 (최후 수단)"""
     text = (title + " " + tags + " " + content[:200]).lower()
     rules = [
         ("food", ["美食", "食谱", "做饭", "烹饪", "烘焙", "食材", "好吃"]),
@@ -144,7 +144,7 @@ def detect_category_from_content(title: str, tags: str, content: str) -> str | N
     for cat, keywords in rules:
         if any(k in text for k in keywords):
             return cat
-    return "lifestyle"  # 最终兜底
+    return "lifestyle"  # 최후 수단 기본값
 
 
 def is_comment_file(headers: list[str]) -> bool:
@@ -216,7 +216,7 @@ def parse_datetime(val):
 
 
 def get_field(data: dict, *keys, default=None):
-    """从 dict 中按多个可能的 key 取值"""
+    """dict에서 여러 가능한 key 순서로 값을 가져옵니다"""
     for k in keys:
         if k in data and data[k] is not None:
             return data[k]
@@ -247,7 +247,7 @@ def process_note_xlsx(filepath: str, default_category: str | None) -> list[dict]
         title = str(get_field(data, "笔记标题") or "").strip()
         content = str(get_field(data, "笔记内容") or "").strip()
 
-        # 品类：优先来源关键词 → 文件名推断 → 内容推断
+        # 카테고리: 출처 키워드 우선 → 파일명 추론 → 콘텐츠 추론
         category = (
             detect_category_from_keyword(get_field(data, "来源关键词"))
             or default_category
@@ -263,7 +263,7 @@ def process_note_xlsx(filepath: str, default_category: str | None) -> list[dict]
         author_total = safe_int(get_field(data, "获赞与收藏"))
         image_count = safe_int(get_field(data, "图片数量"))
 
-        # 发布时间：有些文件分为"发布日期"和"发布时间"两列
+        # 게시 시간: 일부 파일에서 "게시 날짜"와 "게시 시간"이 두 열로 분리됨
         pub_raw = get_field(data, "发布时间", "发布日期")
         publish_time, publish_hour, publish_weekday = parse_datetime(pub_raw)
 
@@ -361,7 +361,7 @@ def compute_viral_threshold(cursor):
             (cat, threshold)
         )
         viral = len(vals) - p90_idx
-        print(f"  [{cat}] {len(vals)} 条, P90={threshold}, 爆款 {viral} 条")
+        print(f"  [{cat}] {len(vals)}건, P90={threshold}, 바이럴 {viral}건")
 
 
 # ── CSV export ──────────────────────────────────────────────────
@@ -410,7 +410,7 @@ def export_csv(conn):
 
 def main():
     print("=" * 60)
-    print("Step 1: 数据导入与清洗")
+    print("Step 1: 데이터 가져오기 및 정제")
     print("=" * 60)
 
     # Ensure DB directory exists
@@ -430,7 +430,7 @@ def main():
 
     # Recursively find all xlsx files
     xlsx_files = sorted(RAW_DATA_DIR.rglob("*.xlsx"))
-    print(f"\n找到 {len(xlsx_files)} 个 xlsx 文件\n")
+    print(f"\n{len(xlsx_files)}개의 xlsx 파일을 찾았습니다\n")
 
     for f in xlsx_files:
         if f.name.startswith("~$"):  # skip temp files
@@ -443,7 +443,7 @@ def main():
             first_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), None)
             wb.close()
         except Exception as e:
-            print(f"  [跳过] {f.name} — 无法读取: {e}")
+            print(f"  [건너뜀] {f.name} — 읽을 수 없음: {e}")
             continue
 
         if not first_row:
@@ -474,9 +474,9 @@ def main():
                     """, r)
                     imported += 1
                 except Exception as e:
-                    print(f"    评论错误: {r['comment_id']} — {e}")
+                    print(f"    댓글 오류: {r['comment_id']} — {e}")
             total_comments += imported
-            print(f"  📝 评论 {f.name}: {imported} 条")
+            print(f"  📝 댓글 {f.name}: {imported}건")
         else:
             # ── Note file ──
             category = detect_category(f.name)
@@ -503,41 +503,41 @@ def main():
                     """, r)
                     imported += 1
                 except Exception as e:
-                    print(f"    笔记错误: {r.get('note_id')} — {e}")
+                    print(f"    게시글 오류: {r.get('note_id')} — {e}")
 
-            cat_label = category or "未分类"
+            cat_label = category or "미분류"
             total_notes += imported
             if imported > 0:
-                print(f"  📄 笔记 {f.name} → [{cat_label}]: {imported} 条")
+                print(f"  📄 게시글 {f.name} → [{cat_label}]: {imported}건")
             elif records:
-                print(f"  [跳过] {f.name} — 无法确定品类, {len(records)} 条未导入")
+                print(f"  [건너뜀] {f.name} — 카테고리 결정 불가, {len(records)}건 미가져오기")
             else:
-                print(f"  [跳过] {f.name} — 无有效数据")
+                print(f"  [건너뜀] {f.name} — 유효한 데이터 없음")
 
-    # 计算爆款阈值
-    print("\n计算爆款阈值 (P90)...")
+    # 바이럴 임계값 계산
+    print("\n바이럴 임계값 계산 중 (P90)...")
     compute_viral_threshold(cursor)
 
     conn.commit()
 
-    # 统计报告
+    # 통계 보고서
     print(f"\n{'='*60}")
-    print("导入统计")
+    print("가져오기 통계")
     print(f"{'='*60}")
     cursor.execute("SELECT category, COUNT(*), SUM(is_viral) FROM research_notes GROUP BY category")
     for cat, total, viral in cursor.fetchall():
-        print(f"  {cat:12s}: {total:4d} 条 ({viral or 0} 爆款)")
+        print(f"  {cat:12s}: {total:4d}건 ({viral or 0} 바이럴)")
     cursor.execute("SELECT COUNT(*) FROM research_notes")
     n = cursor.fetchone()[0]
-    print(f"\n  笔记总计: {n} 条")
-    print(f"  评论总计: {total_comments} 条")
+    print(f"\n  게시글 총계: {n}건")
+    print(f"  댓글 총계: {total_comments}건")
 
-    # 导出 CSV
-    print(f"\n导出 CSV...")
+    # CSV 내보내기
+    print(f"\nCSV 내보내기 중...")
     export_csv(conn)
 
     conn.close()
-    print(f"\n数据库: {RESEARCH_DB}")
+    print(f"\n데이터베이스: {RESEARCH_DB}")
 
 
 if __name__ == "__main__":

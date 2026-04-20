@@ -312,10 +312,10 @@ async def transcribe_video_with_whisper(video_bytes: bytes, container_suffix: st
     )
     try:
         client = AsyncOpenAI(api_key=key, base_url=base, http_client=http_client)
-        # 미설정 시 기본 언어 zh. 빈 문자열을 명시하면 language 파라미터를 보내지 않는다.
+        # 미설정 시 기본 언어 ko. 빈 문자열을 명시하면 language 파라미터를 보내지 않는다.
         _lr = os.getenv("VIDEO_STT_LANGUAGE")
         if _lr is None:
-            lang = "zh"
+            lang = "ko"
         else:
             lang = _lr.strip() or None
         texts: list[str] = []

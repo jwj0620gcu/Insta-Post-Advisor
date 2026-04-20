@@ -1,6 +1,6 @@
 """
-Step 6: 用户画像系统
-使用 step 1 已导入的 research_comments，LLM 分类 + 画像生成。
+Step 6: 사용자 페르소나 시스템
+step 1에서 가져온 research_comments를 사용하여 LLM 분류 + 페르소나 생성.
 
 Usage:
     python scripts/research/06_user_persona.py
@@ -30,7 +30,7 @@ def get_client() -> AsyncOpenAI:
 
 
 def ensure_classification_columns(cursor):
-    """确保 research_comments 表有 LLM 分类列"""
+    """research_comments 테이블에 LLM 분류 컬럼이 있는지 확인합니다"""
     existing = {r[1] for r in cursor.execute("PRAGMA table_info(research_comments)")}
     additions = {
         "category": "TEXT",
@@ -46,7 +46,7 @@ def ensure_classification_columns(cursor):
 
 
 def assign_categories(cursor):
-    """通过 note_id 关联，给评论分配品类"""
+    """note_id를 통해 댓글에 카테고리를 할당합니다"""
     cursor.execute("""
         UPDATE research_comments
         SET category = (
@@ -59,26 +59,26 @@ def assign_categories(cursor):
     assigned = cursor.fetchone()[0]
     cursor.execute("SELECT COUNT(*) FROM research_comments")
     total = cursor.fetchone()[0]
-    print(f"  品类关联: {assigned}/{total} 条评论已分配品类")
+    print(f"  카테고리 연결: {assigned}/{total} 개 댓글에 카테고리 할당 완료")
 
 
-# ─── LLM 分类 ───
+# ─── LLM 분류 ───
 
-CLASSIFY_PROMPT = """对以下小红书评论进行分类。每条评论输出一个 JSON 对象。
+CLASSIFY_PROMPT = """아래 Instagram 댓글을 분류하세요. 각 댓글에 대해 JSON 객체를 하나씩 출력하세요.
 
-分类维度：
+분류 기준:
 - sentiment: positive / negative / neutral
-- user_type: 种草型 / 经验型 / 质疑型 / 求购型 / 调侃型 / 路人型
-- intent: 赞美 / 追问 / 分享经验 / 质疑 / 求链接 / 吐槽 / 互动 / 争论
-- emotion_level: 1-5 (1=平淡, 5=激动)
+- user_type: 추천형 / 경험형 / 의심형 / 구매요청형 / 유머형 / 일반인형
+- intent: 칭찬 / 질문 / 경험공유 / 의심 / 링크요청 / 불평 / 상호작용 / 논쟁
+- emotion_level: 1-5 (1=평범, 5=격렬)
 
-输出 JSON 数组：
+JSON 배열로 출력:
 [
-  {{"id": "评论ID", "sentiment": "...", "user_type": "...", "intent": "...", "emotion_level": N}},
+  {{"id": "댓글ID", "sentiment": "...", "user_type": "...", "intent": "...", "emotion_level": N}},
   ...
 ]
 
-评论数据：
+댓글 데이터:
 {comments}"""
 
 
@@ -86,13 +86,13 @@ async def classify_batch(client: AsyncOpenAI, batch: list[dict], semaphore: asyn
     async with semaphore:
         try:
             comments_text = "\n".join(
-                f'ID:{c["id"]} 内容:{c["text"][:100]}'
+                f'ID:{c["id"]} 내용:{c["text"][:100]}'
                 for c in batch
             )
             response = await client.chat.completions.create(
                 model=MODEL_FAST,
                 messages=[
-                    {"role": "system", "content": "你是评论分析专家，只输出 JSON 数组。"},
+                    {"role": "system", "content": "당신은 댓글 분석 전문가입니다. JSON 배열만 출력하세요."},
                     {"role": "user", "content": CLASSIFY_PROMPT.format(comments=comments_text)},
                 ],
                 max_completion_tokens=1500,
@@ -102,12 +102,12 @@ async def classify_batch(client: AsyncOpenAI, batch: list[dict], semaphore: asyn
                 raw = raw.split("\n", 1)[1].rsplit("```", 1)[0]
             return json.loads(raw)
         except Exception as e:
-            print(f"    分类失败: {e}")
+            print(f"    분류 실패: {e}")
             return []
 
 
 async def run_classification():
-    print("\n=== 6.2 LLM 评论分类 (mimo-v2-flash) ===")
+    print("\n=== 6.2 LLM 댓글 분류 (mimo-v2-flash) ===")
 
     conn = sqlite3.connect(RESEARCH_DB)
     cursor = conn.cursor()
@@ -119,11 +119,11 @@ async def run_classification():
     )
     rows = cursor.fetchall()
     if not rows:
-        print("  无待分类评论")
+        print("  분류할 댓글 없음")
         conn.close()
         return
 
-    print(f"  待分类: {len(rows)} 条")
+    print(f"  분류 대기: {len(rows)} 개")
 
     batch_size = 10
     total_classified = 0
@@ -153,51 +153,51 @@ async def run_classification():
 
         conn.commit()
         done = min(chunk_start + 10, len(tasks)) * batch_size
-        print(f"    进度: {min(done, len(rows))}/{len(rows)}")
+        print(f"    진행: {min(done, len(rows))}/{len(rows)}")
 
-    print(f"  已分类: {total_classified} 条")
+    print(f"  분류 완료: {total_classified} 개")
     conn.close()
     await client.close()
 
 
-# ─── 画像生成 ───
+# ─── 페르소나 생성 ───
 
-PERSONA_PROMPT = """你是小红书用户研究专家。以下是 {category} 品类评论的分类统计结果和示例评论。
+PERSONA_PROMPT = """당신은 Instagram 사용자 연구 전문가입니다. 아래는 {category} 카테고리 댓글의 분류 통계 및 예시 댓글입니다.
 
-请生成 5-8 种典型用户画像，输出 JSON：
+5-8가지 전형적인 사용자 페르소나를 생성하고 JSON으로 출력하세요:
 {{
   "personas": [
     {{
-      "name": "画像名称",
+      "name": "페르소나 이름",
       "ratio": 0.30,
-      "description": "简短描述",
-      "language_style": "语言风格特征",
-      "typical_phrases": ["常用短语1", "常用短语2", "常用短语3"],
-      "comment_templates": ["模板1：{{product}}好好用！", "模板2"],
-      "triggers": "什么内容会触发这类评论",
-      "interaction_style": "倾向点赞/回复/争论/默默收藏"
+      "description": "간단한 설명",
+      "language_style": "언어 스타일 특징",
+      "typical_phrases": ["자주 쓰는 표현1", "자주 쓰는 표현2", "자주 쓰는 표현3"],
+      "comment_templates": ["템플릿1: {{product}} 너무 좋아요!", "템플릿2"],
+      "triggers": "어떤 콘텐츠가 이런 댓글을 유발하는지",
+      "interaction_style": "좋아요 경향/답글/논쟁/조용히 저장"
     }}
   ],
   "controversy_patterns": [
     {{
-      "topic": "争议话题",
-      "side_a": "正方观点模板",
-      "side_b": "反方观点模板",
-      "escalation_path": ["起始→", "升级→", "爆发"]
+      "topic": "논쟁 주제",
+      "side_a": "찬성측 의견 템플릿",
+      "side_b": "반대측 의견 템플릿",
+      "escalation_path": ["시작→", "고조→", "폭발"]
     }}
   ],
-  "category_characteristics": "该品类评论区的独特生态描述"
+  "category_characteristics": "해당 카테고리 댓글 공간의 독특한 생태 설명"
 }}
 
-分类统计：
+분류 통계:
 {stats}
 
-示例评论（按类型分组）：
+예시 댓글 (유형별 분류):
 {examples}"""
 
 
 async def generate_personas():
-    print("\n=== 6.3 用户画像生成 (mimo-v2-pro) ===")
+    print("\n=== 6.3 사용자 페르소나 생성 (mimo-v2-pro) ===")
 
     conn = sqlite3.connect(RESEARCH_DB)
     cursor = conn.cursor()
@@ -232,12 +232,12 @@ async def generate_personas():
             examples=json.dumps(examples, ensure_ascii=False, indent=1),
         )
 
-        print(f"  [{cat}] 生成画像...")
+        print(f"  [{cat}] 페르소나 생성 중...")
         try:
             response = await client.chat.completions.create(
                 model=MODEL_PRO,
                 messages=[
-                    {"role": "system", "content": "你是用户研究专家，只输出 JSON。"},
+                    {"role": "system", "content": "당신은 사용자 연구 전문가입니다. JSON만 출력하세요."},
                     {"role": "user", "content": prompt},
                 ],
                 max_completion_tokens=3000,
@@ -248,9 +248,9 @@ async def generate_personas():
             result = json.loads(raw)
             all_personas[cat] = result
             n = len(result.get("personas", []))
-            print(f"    生成 {n} 种画像")
+            print(f"    {n}가지 페르소나 생성")
         except Exception as e:
-            print(f"    失败: {e}")
+            print(f"    실패: {e}")
 
     out = LLM_DIR / "user_personas.json"
     out.write_text(json.dumps(all_personas, ensure_ascii=False, indent=2))
@@ -263,17 +263,17 @@ async def generate_personas():
 
 async def main():
     print("=" * 60)
-    print("Step 6: 用户画像系统")
+    print("Step 6: 사용자 페르소나 시스템")
     print("=" * 60)
 
     conn = sqlite3.connect(RESEARCH_DB)
     cursor = conn.cursor()
 
-    # 确保分类列存在
+    # 분류 컬럼 존재 확인
     ensure_classification_columns(cursor)
 
-    # 通过 note_id 关联品类
-    print("\n=== 6.1 品类关联 ===")
+    # note_id를 통해 카테고리 연결
+    print("\n=== 6.1 카테고리 연결 ===")
     assign_categories(cursor)
     conn.commit()
 
@@ -282,14 +282,14 @@ async def main():
     conn.close()
 
     if total > 0:
-        print(f"  评论总数: {total}")
+        print(f"  댓글 총 수: {total}")
         await run_classification()
         await generate_personas()
     else:
-        print("\n无评论数据。请先运行 01_import_data.py 导入数据。")
+        print("\n댓글 데이터가 없습니다. 먼저 01_import_data.py를 실행하여 데이터를 가져오세요.")
 
     print("\n" + "=" * 60)
-    print("Step 6 完成!")
+    print("Step 6 완료!")
     print("=" * 60)
 
 

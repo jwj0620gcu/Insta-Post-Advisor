@@ -1,6 +1,6 @@
 """
-Step 2: 批量下载封面图片
-从 research.db 读取 cover_url，并行下载到 data/covers/{category}/
+Step 2: 커버 이미지 일괄 다운로드
+research.db에서 cover_url을 읽어 data/covers/{category}/ 에 병렬 다운로드합니다.
 
 Usage:
     python scripts/research/02_download_covers.py
@@ -17,9 +17,9 @@ from config import RESEARCH_DB, COVERS_DIR, DOWNLOAD_CONCURRENCY, ALL_CATEGORIES
 
 
 async def download_one(client: httpx.AsyncClient, url: str, dest: Path, semaphore: asyncio.Semaphore) -> bool:
-    """下载单张图片"""
+    """이미지 한 장을 다운로드합니다"""
     if dest.exists():
-        return True  # 已下载过
+        return True  # 이미 다운로드됨
     if not url or not url.startswith("http"):
         return False
 
@@ -36,7 +36,7 @@ async def download_one(client: httpx.AsyncClient, url: str, dest: Path, semaphor
 
 async def main():
     print("=" * 60)
-    print("Step 2: 下载封面图片")
+    print("Step 2: 커버 이미지 다운로드")
     print("=" * 60)
 
     conn = sqlite3.connect(RESEARCH_DB)
@@ -61,7 +61,7 @@ async def main():
             if not rows:
                 continue
 
-            print(f"\n[{cat}] {len(rows)} 张待下载")
+            print(f"\n[{cat}] {len(rows)}장 다운로드 대기 중")
 
             tasks = []
             for note_id, url in rows:
@@ -75,10 +75,10 @@ async def main():
 
             results = await asyncio.gather(*tasks)
             success = sum(results)
-            print(f"  成功: {success}/{len(rows)}")
+            print(f"  성공: {success}/{len(rows)}")
 
     conn.close()
-    print("\n封面图片已保存到:", COVERS_DIR)
+    print("\n커버 이미지가 저장된 경로:", COVERS_DIR)
 
 
 if __name__ == "__main__":

@@ -271,10 +271,10 @@ export default function ScreenshotAnalysis() {
                         {Object.entries(data as Record<string, unknown>).map(([k, v]) => (
                           <Box key={k} sx={{ mb: 1 }}>
                             <Typography component="span" sx={{ fontSize: 12, fontWeight: 600, color: "#8f7b94" }}>
-                              {k}：
+                              {k}:
                             </Typography>
                             <Typography component="span" sx={{ fontSize: 13, color: "#505050" }}>
-                              {Array.isArray(v) ? (v as string[]).join("、") : String(v)}
+                              {Array.isArray(v) ? (v as string[]).join(", ") : String(v)}
                             </Typography>
                           </Box>
                         ))}

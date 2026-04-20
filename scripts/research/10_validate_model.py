@@ -1,6 +1,6 @@
 """
-Step 10: 模型验证
-用已知爆款 vs 普通笔记反向验证 Model A 的评分准确性。
+Step 10: 모델 검증
+알려진 인기 게시글 vs 일반 게시글로 Model A의 평가 정확도를 역방향 검증합니다.
 
 Usage:
     python scripts/research/10_validate_model.py
@@ -30,12 +30,12 @@ def load_json(path: Path) -> dict:
 
 
 def score_note(note: dict, params: dict) -> float:
-    """基于 Model A 参数给单条笔记打分"""
+    """Model A 파라미터 기반으로 단일 게시글 점수를 계산합니다"""
     weights = params.get("weights", {})
     sp = params.get("scoring_params", {})
     score = 0.0
 
-    # 标题质量
+    # 제목 품질
     tl = note.get("title_length", 0)
     tl_opt = sp.get("title_length", {}).get("optimal", {})
     tl_min, tl_max = tl_opt.get("min", 10), tl_opt.get("max", 25)
@@ -50,14 +50,14 @@ def score_note(note: dict, params: dict) -> float:
     title_score += min(note.get("title_hook_count", 0), 3) * 3
     score += min(title_score, 100) * weights.get("title_quality", 0.2)
 
-    # 标签策略
+    # 태그 전략
     tc = note.get("tag_count", 0)
     tc_opt = sp.get("tag_count", {}).get("optimal", {})
     tc_best = tc_opt.get("best", 6) if isinstance(tc_opt, dict) else 6
     tag_score = max(0, 100 - abs(tc - tc_best) * 10)
     score += tag_score * weights.get("tag_strategy", 0.15)
 
-    # 内容质量
+    # 콘텐츠 품질
     cl = note.get("content_length", 0)
     cl_opt = sp.get("content_length", {}).get("optimal", {})
     cl_min, cl_max = cl_opt.get("min", 100), cl_opt.get("max", 600)
@@ -69,7 +69,7 @@ def score_note(note: dict, params: dict) -> float:
         content_score = max(50, 85 - (cl - cl_max) / 50)
     score += min(content_score, 100) * weights.get("content_quality", 0.15)
 
-    # 图片数量
+    # 이미지 수
     ic = note.get("image_count", 0)
     ic_opt = sp.get("image_count", {}).get("optimal", {})
     ic_min, ic_max = ic_opt.get("min", 3), ic_opt.get("max", 9)
@@ -79,7 +79,7 @@ def score_note(note: dict, params: dict) -> float:
         img_score = max(30, 80 - abs(ic - (ic_min + ic_max) / 2) * 5)
     score += img_score * weights.get("engagement_potential", 0.15)
 
-    # 视觉（暂用基础分）
+    # 비주얼 (임시 기본 점수 사용)
     score += 60 * weights.get("visual_quality", 0.2)
 
     return min(round(score, 1), 100)
@@ -87,12 +87,12 @@ def score_note(note: dict, params: dict) -> float:
 
 def main():
     print("=" * 60)
-    print("Step 10: 模型验证")
+    print("Step 10: 모델 검증")
     print("=" * 60)
 
     model_a = load_json(OUTPUT_DIR / "model_a_scoring.json")
     if not model_a:
-        print("Model A 未找到，请先运行 08_build_scoring_model.py")
+        print("Model A를 찾을 수 없습니다. 먼저 08_build_scoring_model.py를 실행하세요.")
         return
 
     conn = sqlite3.connect(RESEARCH_DB)
@@ -136,17 +136,17 @@ def main():
         all_scores.extend(scores)
         all_actuals.extend(actuals)
 
-        # 相关性
+        # 상관관계
         if len(scores) > 10:
             corr, p_val = stats.spearmanr(scores, actuals)
         else:
             corr, p_val = 0, 1
 
-        # 爆款 vs 普通评分差异
+        # 인기 vs 일반 점수 차이
         viral_mean = np.mean(viral_scores) if viral_scores else 0
         normal_mean = np.mean(normal_scores) if normal_scores else 0
 
-        # 分类准确率（评分 > 中位数 → 预测为好笔记）
+        # 분류 정확도 (점수 > 중간값 → 좋은 게시글로 예측)
         median_score = np.median(scores)
         correct = sum(
             1 for s, r in zip(scores, rows)
@@ -166,9 +166,9 @@ def main():
         }
 
         sig = "***" if p_val < 0.001 else "**" if p_val < 0.01 else "*" if p_val < 0.05 else "ns"
-        print(f"  [{cat}] r={corr:.3f}{sig}, 爆款均分={viral_mean:.1f} vs 普通={normal_mean:.1f}, 准确率={accuracy:.1f}%")
+        print(f"  [{cat}] r={corr:.3f}{sig}, 인기평균={viral_mean:.1f} vs 일반={normal_mean:.1f}, 정확도={accuracy:.1f}%")
 
-    # 总体相关性
+    # 전체 상관관계
     if len(all_scores) > 20:
         total_corr, total_p = stats.spearmanr(all_scores, all_actuals)
         validation_results["_overall"] = {
@@ -176,32 +176,32 @@ def main():
             "correlation": round(float(total_corr), 4),
             "p_value": round(float(total_p), 6),
         }
-        print(f"\n  总体: r={total_corr:.3f}, n={len(all_scores)}")
+        print(f"\n  전체: r={total_corr:.3f}, n={len(all_scores)}")
 
-    # 可视化：模型评分 vs 实际互动（散点图）
+    # 시각화: 모델 점수 vs 실제 인터랙션 (산점도)
     if all_scores:
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.scatter(all_scores, np.log1p(all_actuals), alpha=0.4, s=20, c="#ff2442")
-        ax.set_xlabel("Model A 预测评分", fontsize=12)
-        ax.set_ylabel("log(实际互动量+1)", fontsize=12)
-        ax.set_title("模型验证：评分 vs 实际互动量", fontsize=14, fontweight="bold")
+        ax.set_xlabel("Model A 예측 점수", fontsize=12)
+        ax.set_ylabel("log(실제 인터랙션+1)", fontsize=12)
+        ax.set_title("모델 검증: 점수 vs 실제 인터랙션", fontsize=14, fontweight="bold")
 
-        # 添加趋势线
+        # 추세선 추가
         z = np.polyfit(all_scores, np.log1p(all_actuals), 1)
         p = np.poly1d(z)
         x_line = np.linspace(min(all_scores), max(all_scores), 100)
         ax.plot(x_line, p(x_line), "--", color="#333", linewidth=1.5, alpha=0.7,
-                label=f"趋势线 (r={total_corr:.3f})")
+                label=f"추세선 (r={total_corr:.3f})")
         ax.legend()
         plt.tight_layout()
         plt.savefig(CHARTS_DIR / "model_validation.png", dpi=150)
         plt.close()
         print(f"  → {CHARTS_DIR / 'model_validation.png'}")
 
-    # 保存
+    # 저장
     out = OUTPUT_DIR / "model_validation.json"
     out.write_text(json.dumps(validation_results, ensure_ascii=False, indent=2))
-    print(f"\n验证结果: {out}")
+    print(f"\n검증 결과: {out}")
 
     conn.close()
 

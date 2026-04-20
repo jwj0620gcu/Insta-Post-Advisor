@@ -1,6 +1,6 @@
 """
-Step 5: 综合报告生成
-合并 Track A 统计结果 + Track B LLM 分析结果，传给 LLM 做最终解读，生成研究报告。
+Step 5: 종합 보고서 생성
+Track A 통계 결과 + Track B LLM 분석 결과를 합쳐 LLM에 전달하여 최종 해석 후 연구 보고서를 생성합니다.
 
 Usage:
     python scripts/research/05_generate_report.py
@@ -32,80 +32,80 @@ def load_json(path: Path) -> dict:
     return {}
 
 
-REPORT_PROMPT = """你是一个资深的社交媒体数据科学家。基于以下统计分析和 LLM 分析的结果，请撰写一份完整的研究报告。
+REPORT_PROMPT = """당신은 노련한 소셜 미디어 데이터 과학자입니다. 아래 통계 분석 및 LLM 분석 결과를 바탕으로 완전한 연구 보고서를 작성하세요.
 
-## 要求
-1. 不要简单复述数据，要**解读每个发现的实际意义**
-2. 特别关注**反直觉的结论**
-3. 每个品类给出**具体可执行的「黄金参数」推荐**
-4. 对比品类间差异，找出**跨品类通用规律**和**品类特异规律**
-5. 指出数据局限性
+## 요구사항
+1. 데이터를 단순히 반복하지 말고, **각 발견의 실제 의미를 해석**하세요
+2. **반직관적 결론**에 특히 주목하세요
+3. 각 카테고리에 대해 **구체적이고 실행 가능한 「황금 파라미터」 추천**을 제시하세요
+4. 카테고리 간 차이를 비교하여 **카테고리 공통 규칙**과 **카테고리별 특이 규칙**을 찾으세요
+5. 데이터 한계를 지적하세요
 
-## 输出格式 (Markdown)
+## 출력 형식 (Markdown)
 
-# 小红书笔记数据研究报告
+# Instagram 게시글 데이터 연구 보고서
 
-## 一、研究概览
-（样本量、品类覆盖、分析方法）
+## 1. 연구 개요
+（표본 수, 카테고리 범위, 분석 방법）
 
-## 二、核心发现
-（最重要的 5-8 个发现，每个配数据支撑）
+## 2. 핵심 발견
+（가장 중요한 5-8가지 발견, 각각 데이터 근거 포함）
 
-## 三、各品类深度分析
-（每个品类一个小节：特征画像 + 爆款密码 + 黄金参数）
+## 3. 카테고리별 심층 분석
+（각 카테고리 소절: 특성 프로파일 + 인기 게시글의 비밀 + 황금 파라미터）
 
-## 四、封面视觉研究
-（基于 LLM 视觉分析的发现）
+## 4. 커버 비주얼 연구
+（LLM 비주얼 분석 기반 발견）
 
-## 五、内容模式研究
-（标题模式 + 内容结构 + 情绪基调）
+## 5. 콘텐츠 패턴 연구
+（제목 패턴 + 콘텐츠 구조 + 감성 기조）
 
-## 六、标签策略研究
-（最优策略 + 品类差异）
+## 6. 태그 전략 연구
+（최적 전략 + 카테고리 차이）
 
-## 七、发布时机研究
-（最佳时段 + 星期效应）
+## 7. 게시 타이밍 연구
+（최적 시간대 + 요일 효과）
 
-## 八、量化评分标准
-（每个品类的推荐参数表）
+## 8. 정량 평가 기준
+（카테고리별 추천 파라미터 표）
 
-## 九、局限性与展望
+## 9. 한계점 및 전망
 
 ---
 
-## 输入数据
+## 입력 데이터
 
-### 描述性统计
+### 기술 통계
 {descriptive_stats}
 
-### 相关性分析
+### 상관관계 분석
 {correlation}
 
-### 回归分析
+### 회귀 분석
 {regression}
 
-### 品类差异
+### 카테고리 차이
 {category_comparison}
 
-### 最佳发布时段
+### 최적 게시 시간대
 {best_hours}
 
-### 聚类分析
+### 클러스터 분석
 {clusters}
 
-### 封面视觉分析（LLM）
+### 커버 비주얼 분석（LLM）
 {cover_analysis_summary}
 
-### 内容模式分析（LLM）
+### 콘텐츠 패턴 분석（LLM）
 {content_patterns}
 
-### 标签策略分析（LLM）
+### 태그 전략 분석（LLM）
 {tag_analysis}
 """
 
 
 def summarize_cover_analysis(cover_data: dict) -> dict:
-    """汇总封面分析结果，避免传太多数据"""
+    """커버 분석 결과를 요약하여 과도한 데이터 전달을 방지합니다"""
     summary = {}
     for cat, items in cover_data.items():
         if not items:
@@ -144,10 +144,10 @@ def summarize_cover_analysis(cover_data: dict) -> dict:
 
 async def main():
     print("=" * 60)
-    print("Step 5: 综合报告生成")
+    print("Step 5: 종합 보고서 생성")
     print("=" * 60)
 
-    # 加载所有分析结果
+    # 모든 분석 결과 로드
     desc_stats = load_json(STATS_DIR / "descriptive_stats.json")
     correlation = load_json(STATS_DIR / "correlation_matrix.json")
     regression = load_json(STATS_DIR / "regression_results.json")
@@ -158,10 +158,10 @@ async def main():
     content_patterns = load_json(LLM_DIR / "content_patterns.json")
     tag_analysis = load_json(LLM_DIR / "tag_analysis.json")
 
-    # 汇总封面数据
+    # 커버 데이터 요약
     cover_summary = summarize_cover_analysis(cover_all)
 
-    # 精简相关性数据（只保留与 engagement 的相关性）
+    # 상관관계 데이터 간소화 (engagement와의 상관관계만 보존)
     corr_simplified = {}
     if correlation and "engagement" in correlation:
         for k, v in correlation["engagement"].items():
@@ -180,25 +180,25 @@ async def main():
         tag_analysis=json.dumps(tag_analysis, ensure_ascii=False, indent=1)[:2000],
     )
 
-    print("调用 mimo-v2-pro 生成最终报告...")
+    print("mimo-v2-pro 호출하여 최종 보고서 생성 중...")
     client = get_client()
     try:
         response = await client.chat.completions.create(
             model=MODEL_PRO,
             messages=[
-                {"role": "system", "content": "你是数据科学研究员，擅长将数据分析转化为可读性强的研究报告。使用中文撰写。"},
+                {"role": "system", "content": "당신은 데이터 과학 연구원으로, 데이터 분석을 가독성 높은 연구 보고서로 변환하는 데 뛰어납니다. 한국어로 작성하세요."},
                 {"role": "user", "content": prompt},
             ],
             max_completion_tokens=8000,
         )
         report_text = response.choices[0].message.content
 
-        # 添加元信息
+        # 메타 정보 추가
         header = f"""---
-生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}
-数据来源: NoteRx 研究数据库
-分析方法: 传统统计 (Track A) + LLM 深度分析 (Track B)
-模型: {MODEL_PRO}
+생성 시간: {datetime.now().strftime('%Y-%m-%d %H:%M')}
+데이터 출처: NoteRx 연구 데이터베이스
+분석 방법: 전통 통계 (Track A) + LLM 심층 분석 (Track B)
+모델: {MODEL_PRO}
 ---
 
 """
@@ -206,14 +206,14 @@ async def main():
 
         out = OUTPUT_DIR / "final_report.md"
         out.write_text(report)
-        print(f"\n报告已生成: {out}")
-        print(f"报告长度: {len(report_text)} 字")
+        print(f"\n보고서 생성 완료: {out}")
+        print(f"보고서 길이: {len(report_text)} 자")
 
     except Exception as e:
-        print(f"报告生成失败: {e}")
+        print(f"보고서 생성 실패: {e}")
 
-    # 生成量化评分参数
-    print("\n生成量化评分参数...")
+    # 정량 평가 파라미터 생성
+    print("\n정량 평가 파라미터 생성 중...")
     scoring_params = {}
     for cat in ALL_CATEGORIES:
         if cat not in desc_stats:
@@ -222,7 +222,7 @@ async def main():
         reg_cat = regression.get(cat, {})
         coefs = reg_cat.get("coefficients", {})
 
-        # 从描述统计和回归系数推导最优参数
+        # 기술 통계 및 회귀 계수로부터 최적 파라미터 도출
         scoring_params[cat] = {
             "scoring_params": {
                 "title_length": {
@@ -267,12 +267,12 @@ async def main():
 
     out = OUTPUT_DIR / "scoring_params.json"
     out.write_text(json.dumps(scoring_params, ensure_ascii=False, indent=2))
-    print(f"评分参数: {out}")
+    print(f"평가 파라미터: {out}")
 
     await client.close()
 
     print("\n" + "=" * 60)
-    print("Step 5 完成!")
+    print("Step 5 완료!")
     print("=" * 60)
 
 

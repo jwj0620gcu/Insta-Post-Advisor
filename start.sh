@@ -1,19 +1,19 @@
 #!/bin/bash
-# 薯医 NoteRx 一键启动脚本
+# NoteRx 원클릭 시작 스크립트
 # Usage: ./start.sh
 
 set -e
 
-echo "💊 薯医 NoteRx 启动中..."
+echo "💊 NoteRx 시작 중..."
 
 # Check .env
 if [ ! -f backend/.env ] && [ ! -f .env ]; then
-  echo "⚠️  未找到 .env 文件，请复制 .env.example 并填入 API Key"
+  echo "⚠️  .env 파일을 찾을 수 없습니다. .env.example을 복사하고 API Key를 입력하세요"
   echo "   cp .env.example backend/.env"
 fi
 
 # Start backend
-echo "🔧 启动后端服务..."
+echo "🔧 백엔드 서비스 시작 중..."
 cd backend
 source venv/bin/activate 2>/dev/null || python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt -q
@@ -22,7 +22,7 @@ BACKEND_PID=$!
 cd ..
 
 # Start frontend
-echo "🎨 启动前端服务..."
+echo "🎨 프론트엔드 서비스 시작 중..."
 cd frontend
 npm install -q 2>/dev/null
 npx vite --port 5173 &
@@ -30,12 +30,12 @@ FRONTEND_PID=$!
 cd ..
 
 echo ""
-echo "✅ 薯医 NoteRx 已启动！"
-echo "   前端: http://localhost:5173"
-echo "   后端: http://localhost:8000"
-echo "   API文档: http://localhost:8000/docs"
+echo "✅ NoteRx가 시작되었습니다!"
+echo "   프론트엔드: http://localhost:5173"
+echo "   백엔드: http://localhost:8000"
+echo "   API 문서: http://localhost:8000/docs"
 echo ""
-echo "按 Ctrl+C 停止所有服务"
+echo "Ctrl+C를 눌러 모든 서비스를 중지하세요"
 
 trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit" INT TERM
 wait

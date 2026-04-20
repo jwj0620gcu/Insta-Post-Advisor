@@ -198,9 +198,9 @@ class ImageAnalyzer:
         ]
         harmony = color_harmony.get("harmony_level")
         if harmony:
-            parts.append(f"，{harmony}。")
+            parts.append(f", {harmony}.")
         else:
-            parts.append("。")
+            parts.append(".")
 
         return "".join(parts)
 

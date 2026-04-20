@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """
-NoteRx 内容评分模型 (Model A) — 独立可运行程序
-基于 874 条真实小红书笔记数据训练，双轨分析（传统统计 + LLM）。
+NoteRx 콘텐츠 평가 모델 (Model A) — 독립 실행 가능한 프로그램
+874개의 실제 Instagram 게시글 데이터로 훈련, 이중 트랙 분석 (전통 통계 + LLM).
 
 Usage:
-    # 评分单条笔记
-    python noterx_scoring_model.py --title "5分钟学会这个做法" --content "今天教大家..." --category food --tags 5 --images 6
+    # 단일 게시글 평가
+    python noterx_scoring_model.py --title "5분만에 이 방법 익히기" --content "오늘 알려드릴게요..." --category food --tags 5 --images 6
 
-    # 批量评分 CSV
+    # CSV 일괄 평가
     python noterx_scoring_model.py --csv input.csv --output scored.csv
 
-    # 输出模型参数
+    # 모델 파라미터 출력
     python noterx_scoring_model.py --show-params
 
-研究方法:
-    Track A: Spearman 相关性 + 线性回归 + K-Means 聚类 + Kruskal-Wallis 检验
-    Track B: LLM 内容模式分析 + 封面视觉分析 + 标签策略分析
-    Model A: 基于回归系数的加权评分模型，per-category 参数优化
+연구 방법:
+    Track A: Spearman 상관관계 + 선형 회귀 + K-Means 클러스터링 + Kruskal-Wallis 검정
+    Track B: LLM 콘텐츠 패턴 분석 + 커버 비주얼 분석 + 태그 전략 분석
+    Model A: 회귀 계수 기반 가중치 평가 모델, 카테고리별 파라미터 최적화
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ from typing import Optional
 
 
 # ═══════════════════════════════════════════════════════════════
-# 模型参数（从 874 条真实数据训练得出）
+# 모델 파라미터 (874개의 실제 데이터로 훈련됨)
 # ═══════════════════════════════════════════════════════════════
 
 MODEL_PARAMS = {
@@ -110,7 +110,7 @@ MODEL_PARAMS = {
 
 
 # ═══════════════════════════════════════════════════════════════
-# 特征提取
+# 특성 추출
 # ═══════════════════════════════════════════════════════════════
 
 def detect_emoji(text: str) -> bool:
@@ -161,11 +161,11 @@ class NoteFeatures:
 
 
 # ═══════════════════════════════════════════════════════════════
-# 评分引擎
+# 평가 엔진
 # ═══════════════════════════════════════════════════════════════
 
 def range_score(value: float, opt_min: float, opt_max: float, base: float = 80) -> float:
-    """值在最优区间内得高分，区间外衰减"""
+    """값이 최적 범위 내에 있으면 높은 점수, 범위 밖이면 감점"""
     if opt_min <= value <= opt_max:
         mid = (opt_min + opt_max) / 2
         half = (opt_max - opt_min) / 2 + 1
@@ -178,20 +178,20 @@ def range_score(value: float, opt_min: float, opt_max: float, base: float = 80) 
 
 def score_note(features: NoteFeatures) -> dict:
     """
-    对一条笔记进行多维度评分。
+    게시글 하나를 다차원으로 평가합니다.
 
     Returns:
         {
-            "total_score": float,           # 总分 0-100
-            "dimensions": {                  # 各维度评分
+            "total_score": float,           # 총점 0-100
+            "dimensions": {                  # 각 차원 점수
                 "title_quality": float,
                 "content_quality": float,
                 "visual_quality": float,
                 "tag_strategy": float,
                 "engagement_potential": float,
             },
-            "diagnosis": [str, ...],         # 诊断建议
-            "percentile_estimate": str,      # 预估百分位
+            "diagnosis": [str, ...],         # 진단 조언
+            "percentile_estimate": str,      # 예상 백분위
         }
     """
     cat = features.category
@@ -200,7 +200,7 @@ def score_note(features: NoteFeatures) -> dict:
     params = MODEL_PARAMS[cat]
     w = params["weights"]
 
-    # ── 标题质量 ──
+    # ── 제목 품질 ──
     tl = params["title_length"]
     title_score = range_score(features.title_length, tl["min"], tl["max"])
     title_score += features.has_numbers * 5
@@ -208,21 +208,21 @@ def score_note(features: NoteFeatures) -> dict:
     title_score += features.has_emoji * 2
     title_score = min(title_score, 100)
 
-    # ── 内容质量 ──
+    # ── 콘텐츠 품질 ──
     cl = params["content_length"]
     content_score = range_score(features.content_length, cl["min"], cl["max"], 85)
     content_score = min(content_score, 100)
 
-    # ── 视觉质量（基于图片数量，无图像分析时的近似）──
+    # ── 비주얼 품질 (이미지 수 기반, 이미지 분석 없을 때의 근사치) ──
     ic = params["image_count"]
     visual_score = range_score(features.image_count, ic["min"], ic["max"])
     visual_score = min(visual_score, 100)
 
-    # ── 标签策略 ──
+    # ── 태그 전략 ──
     tc = params["tag_count"]
     tag_score = max(0, 100 - abs(features.tag_count - tc["best"]) * 10)
 
-    # ── 互动潜力（综合信号）──
+    # ── 인터랙션 잠재력 (종합 신호) ──
     engagement_signals = 0
     if features.title_length >= tl["min"]: engagement_signals += 25
     if features.has_numbers: engagement_signals += 15
@@ -231,7 +231,7 @@ def score_note(features: NoteFeatures) -> dict:
     if ic["min"] <= features.image_count <= ic["max"]: engagement_signals += 20
     engagement_score = min(engagement_signals, 100)
 
-    # ── 加权总分 ──
+    # ── 가중치 합산 ──
     dimensions = {
         "title_quality": round(title_score, 1),
         "content_quality": round(content_score, 1),
@@ -243,38 +243,38 @@ def score_note(features: NoteFeatures) -> dict:
     total = sum(dimensions[k] * w[k] for k in w)
     total = min(round(total, 1), 100)
 
-    # ── 诊断建议 ──
+    # ── 진단 조언 ──
     diagnosis = []
     if features.title_length < tl["min"]:
-        diagnosis.append(f"标题过短({features.title_length}字)，建议 {tl['min']}-{tl['max']} 字")
+        diagnosis.append(f"제목이 너무 짧습니다({features.title_length}자). {tl['min']}-{tl['max']}자를 권장합니다.")
     elif features.title_length > tl["max"]:
-        diagnosis.append(f"标题过长({features.title_length}字)，建议精简到 {tl['max']} 字内")
+        diagnosis.append(f"제목이 너무 깁니다({features.title_length}자). {tl['max']}자 이내로 줄이세요.")
     if not features.has_numbers:
-        diagnosis.append("标题缺少数字，加入数字可提升点击率")
+        diagnosis.append("제목에 숫자가 없습니다. 숫자를 추가하면 클릭률이 올라갑니다.")
     if features.hook_count == 0:
-        diagnosis.append("标题缺少钩子元素（数字/emoji/感叹号/热词）")
+        diagnosis.append("제목에 훅 요소가 없습니다 (숫자/이모지/느낌표/핫 키워드)")
     if features.content_length < cl["min"]:
-        diagnosis.append(f"正文过短({features.content_length}字)，建议 {cl['min']}-{cl['max']} 字")
+        diagnosis.append(f"본문이 너무 짧습니다({features.content_length}자). {cl['min']}-{cl['max']}자를 권장합니다.")
     if features.tag_count < tc["min"]:
-        diagnosis.append(f"标签过少({features.tag_count}个)，建议 {tc['min']}-{tc['max']} 个")
+        diagnosis.append(f"태그가 너무 적습니다({features.tag_count}개). {tc['min']}-{tc['max']}개를 권장합니다.")
     elif features.tag_count > tc["max"]:
-        diagnosis.append(f"标签过多({features.tag_count}个)，建议精简到 {tc['max']} 个")
+        diagnosis.append(f"태그가 너무 많습니다({features.tag_count}개). {tc['max']}개 이내로 줄이세요.")
     if features.image_count < ic["min"]:
-        diagnosis.append(f"图片过少({features.image_count}张)，建议 {ic['min']}-{ic['max']} 张")
+        diagnosis.append(f"이미지가 너무 적습니다({features.image_count}장). {ic['min']}-{ic['max']}장을 권장합니다.")
 
     if not diagnosis:
-        diagnosis.append("各项参数均在最优区间内，继续保持！")
+        diagnosis.append("모든 파라미터가 최적 범위 내에 있습니다. 계속 유지하세요!")
 
-    # ── 百分位预估 ──
+    # ── 백분위 예상 ──
     bl = params["baseline"]
     if total >= 85:
-        pct = "前 10%（爆款潜力）"
+        pct = "상위 10% (인기 게시글 잠재력)"
     elif total >= 75:
-        pct = "前 25%（优质内容）"
+        pct = "상위 25% (우수 콘텐츠)"
     elif total >= 65:
-        pct = "中位水平（50%）"
+        pct = "중간 수준 (50%)"
     else:
-        pct = "低于中位，建议优化"
+        pct = "중간 이하, 최적화 권장"
 
     return {
         "total_score": total,
@@ -291,22 +291,22 @@ def score_note(features: NoteFeatures) -> dict:
 # ═══════════════════════════════════════════════════════════════
 
 def show_params():
-    print("NoteRx Model A — 品类评分参数")
+    print("NoteRx Model A — 카테고리별 평가 파라미터")
     print("=" * 60)
-    print(f"训练数据: 874 条真实小红书笔记 (5 品类有数据)")
-    print(f"方法: Spearman 相关 + 线性回归 + K-Means 聚类")
+    print(f"훈련 데이터: 874개의 실제 Instagram 게시글 (5개 카테고리 데이터 있음)")
+    print(f"방법: Spearman 상관관계 + 선형 회귀 + K-Means 클러스터링")
     print()
 
     for cat, p in MODEL_PARAMS.items():
         n = p["baseline"]["sample_size"]
         r2 = p["r_squared"]
         print(f"── {cat} ({n} samples, R²={r2}) ──")
-        print(f"  权重: {json.dumps(p['weights'], indent=2)}")
-        print(f"  标题长度: {p['title_length']['min']}-{p['title_length']['max']} 字")
-        print(f"  内容长度: {p['content_length']['min']}-{p['content_length']['max']} 字")
-        print(f"  标签数量: {p['tag_count']['min']}-{p['tag_count']['max']} (最佳 {p['tag_count']['best']})")
-        print(f"  图片数量: {p['image_count']['min']}-{p['image_count']['max']} 张")
-        print(f"  基线互动: avg={p['baseline']['avg_engagement']}, median={p['baseline']['median']}")
+        print(f"  가중치: {json.dumps(p['weights'], indent=2)}")
+        print(f"  제목 길이: {p['title_length']['min']}-{p['title_length']['max']} 자")
+        print(f"  본문 길이: {p['content_length']['min']}-{p['content_length']['max']} 자")
+        print(f"  태그 수: {p['tag_count']['min']}-{p['tag_count']['max']} (최적 {p['tag_count']['best']})")
+        print(f"  이미지 수: {p['image_count']['min']}-{p['image_count']['max']} 장")
+        print(f"  기준 인터랙션: avg={p['baseline']['avg_engagement']}, median={p['baseline']['median']}")
         print()
 
 
@@ -321,22 +321,22 @@ def score_single(args):
     result = score_note(features)
 
     print(f"\n{'='*50}")
-    print(f"NoteRx 笔记诊断报告")
+    print(f"NoteRx 게시글 진단 보고서")
     print(f"{'='*50}")
-    print(f"品类: {features.category}")
-    print(f"标题: {features.title[:50]}{'...' if len(features.title)>50 else ''}")
-    print(f"\n总分: {result['total_score']:.1f}/100  ({result['percentile_estimate']})")
-    print(f"\n各维度评分:")
+    print(f"카테고리: {features.category}")
+    print(f"제목: {features.title[:50]}{'...' if len(features.title)>50 else ''}")
+    print(f"\n총점: {result['total_score']:.1f}/100  ({result['percentile_estimate']})")
+    print(f"\n차원별 점수:")
     for dim, score in result["dimensions"].items():
         w = result["weights"][dim]
         bar = "█" * int(score / 5) + "░" * (20 - int(score / 5))
         print(f"  {dim:22s} {bar} {score:5.1f} (×{w:.3f})")
-    print(f"\n诊断建议:")
+    print(f"\n진단 조언:")
     for d in result["diagnosis"]:
         print(f"  • {d}")
-    print(f"\n基线数据 ({features.category}):")
+    print(f"\n기준선 데이터 ({features.category}):")
     bl = result["baseline"]
-    print(f"  平均互动: {bl['avg_engagement']}, 中位数: {bl['median']}, 爆款线: {bl['viral_threshold']}")
+    print(f"  평균 인터랙션: {bl['avg_engagement']}, 중간값: {bl['median']}, 인기 기준: {bl['viral_threshold']}")
 
 
 def score_csv(args):
@@ -347,11 +347,11 @@ def score_csv(args):
     results = []
     for row in rows:
         features = NoteFeatures(
-            title=row.get("title", row.get("笔记标题", "")),
-            content=row.get("content", row.get("笔记内容", "")),
-            category=row.get("category", row.get("品类", "lifestyle")),
-            tag_count=int(row.get("tag_count", row.get("标签数", 0)) or 0),
-            image_count=int(row.get("image_count", row.get("图片数", 0)) or 0),
+            title=row.get("title", row.get("게시글제목", "")),
+            content=row.get("content", row.get("게시글내용", "")),
+            category=row.get("category", row.get("카테고리", "lifestyle")),
+            tag_count=int(row.get("tag_count", row.get("태그수", 0)) or 0),
+            image_count=int(row.get("image_count", row.get("이미지수", 0)) or 0),
         )
         result = score_note(features)
         results.append({
@@ -368,20 +368,20 @@ def score_csv(args):
         w = csv.DictWriter(f, fieldnames=results[0].keys())
         w.writeheader()
         w.writerows(results)
-    print(f"评分完成: {len(results)} 条 → {out_path}")
+    print(f"평가 완료: {len(results)} 개 → {out_path}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="NoteRx 内容评分模型 (Model A)")
-    parser.add_argument("--title", help="笔记标题")
-    parser.add_argument("--content", help="笔记正文", default="")
+    parser = argparse.ArgumentParser(description="NoteRx 콘텐츠 평가 모델 (Model A)")
+    parser.add_argument("--title", help="게시글 제목")
+    parser.add_argument("--content", help="게시글 본문", default="")
     parser.add_argument("--category", default="lifestyle", choices=list(MODEL_PARAMS.keys()))
-    parser.add_argument("--tags", type=int, default=5, help="标签数量")
-    parser.add_argument("--images", type=int, default=4, help="图片数量")
-    parser.add_argument("--csv", help="批量评分 CSV 文件")
-    parser.add_argument("--output", help="输出 CSV 路径")
-    parser.add_argument("--show-params", action="store_true", help="显示模型参数")
-    parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
+    parser.add_argument("--tags", type=int, default=5, help="태그 수")
+    parser.add_argument("--images", type=int, default=4, help="이미지 수")
+    parser.add_argument("--csv", help="일괄 평가 CSV 파일")
+    parser.add_argument("--output", help="출력 CSV 경로")
+    parser.add_argument("--show-params", action="store_true", help="모델 파라미터 표시")
+    parser.add_argument("--json", action="store_true", help="JSON 형식으로 출력")
     args = parser.parse_args()
 
     if args.show_params:
