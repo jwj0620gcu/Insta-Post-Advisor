@@ -396,21 +396,7 @@ export default function Home() {
             }
           : res;
       setAiRecogs((p) => ({ ...p, [key]: merged }));
-    } catch (e: unknown) {
-      let errMsg = "분석 실패";
-      if (axios.isAxiosError(e)) {
-        const d = e.response?.data;
-        if (d && typeof d === "object" && "detail" in d) {
-          const det = (d as { detail: unknown }).detail;
-          errMsg = typeof det === "string" ? det : JSON.stringify(det);
-        } else if (e.code === "ERR_NETWORK" || e.message === "Network Error") {
-          errMsg = "백엔드에 연결할 수 없습니다. API가 실행 중인지, Vite 프록시 포트(기본 8001, VITE_API_PROXY_TARGET)가 맞는지 확인하세요";
-        } else if (e.message) {
-          errMsg = e.message;
-        }
-      } else if (e instanceof Error && e.message) {
-        errMsg = e.message;
-      }
+    } catch {
       setAiRecogs((p) => ({
         ...p,
         [key]: {
