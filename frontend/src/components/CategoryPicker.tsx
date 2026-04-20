@@ -27,11 +27,11 @@ export default function CategoryPicker({ value, onChange }: Props) {
             key={cat.key}
             onClick={() => onChange(cat.key)}
             sx={{
-              px: 1.75,
-              py: 0.7,
+              px: { xs: 1.25, sm: 1.75 },
+              py: { xs: 0.5, sm: 0.7 },
               borderRadius: "999px",
               cursor: "pointer",
-              fontSize: "0.82rem",
+              fontSize: { xs: "0.75rem", sm: "0.82rem" },
               fontWeight: 600,
               transition: "all 0.25s cubic-bezier(0.2,0,0.2,1)",
               userSelect: "none",

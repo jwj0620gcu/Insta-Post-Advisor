@@ -91,11 +91,11 @@ export default function SimulatedComments({ comments: initial, noteTitle = "", n
   return (
     <Box>
       {/* AI 예상 요약 */}
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5, pb: 1, borderBottom: "1px solid rgba(214,41,118,0.12)" }}>
-        <Typography sx={{ fontSize: 11, color: "#8f7b94" }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 0.5, mb: 1.5, pb: 1, borderBottom: "1px solid rgba(214,41,118,0.12)" }}>
+        <Typography sx={{ fontSize: { xs: 10, sm: 11 }, color: "#8f7b94" }}>
           AI 시뮬레이션 댓글 {comments.length}개
         </Typography>
-        <Typography sx={{ fontSize: 11, color: "#d62976", fontWeight: 600 }}>
+        <Typography sx={{ fontSize: { xs: 10, sm: 11 }, color: "#d62976", fontWeight: 600 }}>
           예상 총 좋아요 {totalLikes.toLocaleString()}
         </Typography>
       </Box>
@@ -106,7 +106,7 @@ export default function SimulatedComments({ comments: initial, noteTitle = "", n
           <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
             {/* Color avatar */}
             <Box sx={{
-              width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+              width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, borderRadius: "50%", flexShrink: 0,
               bgcolor: avatarColor(c.username),
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>

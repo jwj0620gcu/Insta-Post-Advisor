@@ -32,7 +32,7 @@ import { showToast } from "../components/Toast";
 const card = {
   bgcolor: "rgba(255,255,255,0.9)",
   border: "1px solid rgba(214,41,118,0.14)",
-  borderRadius: "18px",
+  borderRadius: { xs: "14px", md: "18px" },
   boxShadow: "0 8px 26px rgba(214,41,118,0.09)",
   p: { xs: 2.5, md: 3 },
 };
@@ -160,21 +160,21 @@ export default function Report() {
     <Box sx={{ minHeight: "100vh", bgcolor: "#fff8f8", pb: 6 }}>
       {/* Top bar */}
       <Box sx={{ position: "sticky", top: 0, zIndex: 50, bgcolor: "rgba(255,255,255,0.86)", backdropFilter: "blur(10px)", borderBottom: "1px solid rgba(214,41,118,0.12)" }}>
-        <Box sx={{ maxWidth: 960, mx: "auto", px: { xs: 2, md: 3 }, py: 1.25, display: "flex", alignItems: "center" }}>
+        <Box sx={{ maxWidth: 960, mx: "auto", px: { xs: 2, md: 3 }, py: 1.25, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Button
-            startIcon={<ArrowBackIcon sx={{ fontSize: 16 }} />}
+            startIcon={<ArrowBackIcon sx={{ fontSize: { xs: 18, md: 16 } }} />}
             onClick={() => navigate("/app")}
             sx={{ color: "#8f7b94", fontWeight: 500, fontSize: 13, "&:hover": { color: "#d62976" } }}
           >
-            홈
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>홈</Box>
           </Button>
-          <Typography sx={{ fontWeight: 600, fontSize: 15, color: "#241628" }}>진단 보고서</Typography>
+          <Typography sx={{ fontWeight: 600, fontSize: 15, color: "#241628", flex: 1, textAlign: "center" }}>진단 보고서</Typography>
           <Button
-            startIcon={<ReplayIcon sx={{ fontSize: 16 }} />}
+            startIcon={<ReplayIcon sx={{ fontSize: { xs: 18, md: 16 } }} />}
             onClick={() => navigate("/diagnosing", { state: params })}
             sx={{ color: "#8f7b94", fontWeight: 500, fontSize: 13, "&:hover": { color: "#d62976" } }}
           >
-            다시 진단
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>다시 진단</Box>
           </Button>
         </Box>
       </Box>

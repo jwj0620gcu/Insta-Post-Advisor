@@ -94,13 +94,13 @@ function BarRow({ label, value, maxVal, color, unit }: {
   const pct = Math.min((value / maxVal) * 100, 100);
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-      <Typography sx={{ fontSize: 11, color: "#8f7b94", width: 56, flexShrink: 0 }}>
+      <Typography sx={{ fontSize: { xs: 10, sm: 11 }, color: "#8f7b94", width: { xs: 48, sm: 56 }, flexShrink: 0 }}>
         {label}
       </Typography>
       <Box sx={{ flex: 1, height: 8, bgcolor: "rgba(214,41,118,0.08)", borderRadius: 4, overflow: "hidden" }}>
         <Box sx={{ height: "100%", bgcolor: color, borderRadius: 4, width: `${pct}%`, transition: "width 0.8s ease" }} />
       </Box>
-      <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#241628", width: 40, textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+      <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#241628", width: { xs: 36, sm: 40 }, textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
         {value}{unit}
       </Typography>
     </Box>

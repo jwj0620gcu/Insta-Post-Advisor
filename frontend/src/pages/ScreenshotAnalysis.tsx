@@ -192,12 +192,12 @@ export default function ScreenshotAnalysis() {
   /* ====== 분석 모드 선택 ====== */
   if (!scenario) {
     return (
-      <Box sx={{ minHeight: "100vh", bgcolor: "#fff8f8", display: "flex", flexDirection: "column", alignItems: "center", px: 2, py: { xs: 5, md: 8 } }}>
+      <Box sx={{ minHeight: "100vh", bgcolor: "#fff8f8", display: "flex", flexDirection: "column", alignItems: "center", px: { xs: 1.5, sm: 2 }, py: { xs: 5, md: 8 } }}>
         <Box sx={{ textAlign: "center", mb: 4 }}>
           <Typography sx={{ fontSize: "1.4rem", fontWeight: 700, color: "#241628" }}>분석 모드 선택</Typography>
           <Typography sx={{ fontSize: "0.85rem", color: "#8f7b94", mt: 0.5 }}>스크린샷으로 다차원 콘텐츠 분석</Typography>
         </Box>
-        <Stack spacing={2} sx={{ width: "100%", maxWidth: 440 }}>
+        <Stack spacing={2} sx={{ width: "100%", maxWidth: { xs: "100%", sm: 440 } }}>
           {([
             { val: "pre_publish" as Scenario, title: "게시 전 분석", desc: "초안·미리보기 단계 — AI 사전 검증으로 게시 전 최적화", color: "#2563eb" },
             { val: "post_publish" as Scenario, title: "게시 후 분석", desc: "이미 게시된 콘텐츠 — 트래픽 데이터를 반영한 심층 분석", color: "#16a34a" },
@@ -206,7 +206,7 @@ export default function ScreenshotAnalysis() {
               key={s.val}
               onClick={() => setScenario(s.val)}
               sx={{
-                p: 3, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)",
+                p: { xs: 2, sm: 3 }, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)",
                 cursor: "pointer", transition: "all 0.15s",
                 "&:hover": { borderColor: s.color, boxShadow: `0 0 0 1px ${s.color}20` },
               }}
@@ -228,17 +228,17 @@ export default function ScreenshotAnalysis() {
     return (
       <Box sx={{ minHeight: "100vh", bgcolor: "#fff8f8", pb: 6 }}>
         <Box sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: "#fff", borderBottom: "1px solid rgba(214,41,118,0.12)" }}>
-          <Box sx={{ maxWidth: 720, mx: "auto", px: 2, py: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Box sx={{ maxWidth: 720, mx: "auto", px: { xs: 1.5, md: 2 }, py: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <Button startIcon={<ArrowBackIcon />} onClick={() => { setResult(null); }} size="small" sx={{ color: "#241628" }}>돌아가기</Button>
             <Typography sx={{ fontWeight: 700, color: "#241628", fontSize: 16 }}>분석 결과</Typography>
             <Box sx={{ width: 64 }} />
           </Box>
         </Box>
-        <Box sx={{ maxWidth: 720, mx: "auto", px: 2, mt: 3 }}>
+        <Box sx={{ maxWidth: { xs: "100%", md: 720 }, mx: "auto", px: 2, mt: 3 }}>
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
             <Stack spacing={2}>
               {/* 종합 정보 */}
-              <Box sx={{ p: 3, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}>
+              <Box sx={{ p: { xs: 2, sm: 3 }, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                   <Typography sx={{ fontWeight: 700, fontSize: 16, color: "#241628" }}>{result.overall.scenario}</Typography>
                   <Chip label={`완성도 ${result.overall.completeness}%`} size="small"
@@ -260,7 +260,7 @@ export default function ScreenshotAnalysis() {
                 const config = SLOTS.find((s) => s.key === slot);
                 const hasError = data && typeof data === "object" && "error" in data;
                 return (
-                  <Box key={slot} sx={{ p: 3, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}>
+                  <Box key={slot} sx={{ p: { xs: 2, sm: 3 }, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}>
                     <Typography sx={{ fontWeight: 600, fontSize: 15, color: "#241628", mb: 1.5 }}>
                       {config?.label || slot}
                     </Typography>
@@ -286,7 +286,7 @@ export default function ScreenshotAnalysis() {
 
               {/* 동영상 정보 */}
               {result.video_info && (
-                <Box sx={{ p: 3, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}>
+                <Box sx={{ p: { xs: 2, sm: 3 }, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}>
                   <Typography sx={{ fontWeight: 600, fontSize: 15, color: "#241628", mb: 1 }}>동영상 정보</Typography>
                   <Typography sx={{ fontSize: 13, color: "#666" }}>
                     {result.video_info.filename} ({result.video_info.size_mb} MB)
@@ -311,7 +311,7 @@ export default function ScreenshotAnalysis() {
     <Box sx={{ minHeight: "100vh", bgcolor: "#fff8f8", pb: 6 }}>
       {/* 상단 바 */}
       <Box sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: "#fff", borderBottom: "1px solid rgba(214,41,118,0.12)" }}>
-        <Box sx={{ maxWidth: 720, mx: "auto", px: 2, py: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Box sx={{ maxWidth: 720, mx: "auto", px: { xs: 1.5, md: 2 }, py: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Button startIcon={<ArrowBackIcon />} onClick={() => setScenario(null)} size="small" sx={{ color: "#241628" }}>
             돌아가기
           </Button>
@@ -322,7 +322,7 @@ export default function ScreenshotAnalysis() {
         </Box>
       </Box>
 
-      <Box sx={{ maxWidth: 720, mx: "auto", px: 2, mt: 3 }}>
+      <Box sx={{ maxWidth: { xs: "100%", md: 720 }, mx: "auto", px: 2, mt: 3 }}>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
           <Stack spacing={2}>
             <Box sx={{ p: 2, borderRadius: "14px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}>
@@ -351,6 +351,7 @@ export default function ScreenshotAnalysis() {
             </Box>
 
             {/* 스크린샷 업로드 카드 */}
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
             {SLOTS.filter((_, idx) => idx < visibleGuideCount).map((slot, idx) => {
               const file = files[slot.key];
               const preview = previews[slot.key];
@@ -363,7 +364,7 @@ export default function ScreenshotAnalysis() {
                 <Box
                   key={slot.key}
                   ref={(el: HTMLDivElement | null) => { slotCardRefs.current[slot.key] = el; }}
-                  sx={{ p: 2.5, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}
+                  sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
                     <Box sx={{ color: "#d62976", display: "flex" }}>{slot.icon}</Box>
@@ -457,9 +458,10 @@ export default function ScreenshotAnalysis() {
                 </Box>
               );
             })}
+            </Box>
 
             {/* 동영상 업로드 */}
-            <Box sx={{ p: 2.5, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}>
+            <Box sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
                 <Box sx={{ color: "#d62976", display: "flex" }}><VideocamIcon /></Box>
                 <Box>
@@ -496,7 +498,7 @@ export default function ScreenshotAnalysis() {
             </Box>
 
             {/* 추가 설명 */}
-            <Box sx={{ p: 2.5, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}>
+            <Box sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(214,41,118,0.12)" }}>
               <Typography sx={{ fontWeight: 600, fontSize: 14, color: "#241628", mb: 1 }}>추가 설명 (선택)</Typography>
               <TextField
                 fullWidth multiline rows={3}

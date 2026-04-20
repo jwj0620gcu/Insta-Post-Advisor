@@ -48,8 +48,8 @@ export default function AgentDebate({ opinions, summary, timeline }: Props) {
         return (
           <Box key={idx}>
             <Box onClick={() => setExpandedIdx(isOpen ? null : idx)} sx={{
-              display: "flex", alignItems: "center", gap: 1.25,
-              px: 1.5, py: 1.25, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: { xs: 1, sm: 1.25 },
+              px: { xs: 1.25, sm: 1.5 }, py: 1.25, cursor: "pointer",
               borderRadius: isOpen ? "12px 12px 0 0" : "12px",
               bgcolor: colors.bg, border: `1px solid ${colors.accent}20`,
               "&:hover": { bgcolor: `${colors.accent}10` },
@@ -62,7 +62,7 @@ export default function AgentDebate({ opinions, summary, timeline }: Props) {
                 <Typography sx={{ fontWeight: 600, fontSize: 13, color: "#241628" }}>{op.agent_name}</Typography>
                 <Typography sx={{ fontSize: 11, color: "#8f7b94" }}>{op.dimension}</Typography>
               </Box>
-              <Typography sx={{ fontWeight: 800, fontSize: 16, color: scoreColor }}>{Math.round(op.score)}</Typography>
+              <Typography sx={{ fontWeight: 800, fontSize: { xs: 14, sm: 16 }, color: scoreColor }}>{Math.round(op.score)}</Typography>
               <ExpandMoreIcon sx={{ color: "#af9ab4", fontSize: 18, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
             </Box>
             <AnimatePresence initial={false}>
