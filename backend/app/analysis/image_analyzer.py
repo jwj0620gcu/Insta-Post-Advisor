@@ -23,6 +23,9 @@ logger = logging.getLogger(__name__)
 class ImageAnalyzer:
     """커버 이미지의 시각 특성을 분석한다."""
 
+    # 분석용 최대 해상도 — 512MB 무료 티어 메모리 한도 대응
+    MAX_ANALYSIS_PX = 800
+
     def analyze(self, image_bytes: bytes) -> dict:
         """
         이미지를 분석해 시각 지표를 반환한다.
@@ -31,6 +34,7 @@ class ImageAnalyzer:
         @returns saturation, text_ratio, has_face, brightness, composition 등을 담은 dict
         """
         img_pil = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        img_pil.thumbnail((self.MAX_ANALYSIS_PX, self.MAX_ANALYSIS_PX), Image.LANCZOS)
         img_np = np.array(img_pil)
 
         composition = self._analyze_composition(img_np)

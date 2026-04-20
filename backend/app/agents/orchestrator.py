@@ -284,12 +284,15 @@ class Orchestrator:
         carousel_summary: dict | None = None
 
         if len(all_images) >= 2:
-            # 캐러셀: 전체 슬라이드 병렬 분석
+            # 캐러셀: 슬라이드를 순차 분석 (병렬 시 numpy 배열이 동시에 쌓여 512MB OOM 발생)
             await _emit_progress("parse_start", f"캐러셀 {len(all_images)}장 슬라이드를 분석하는 중...")
-            raw_results = await asyncio.gather(
-                *[asyncio.to_thread(self.image_analyzer.analyze, img) for img in all_images],
-                return_exceptions=True,
-            )
+            raw_results = []
+            for img in all_images:
+                try:
+                    result = await asyncio.to_thread(self.image_analyzer.analyze, img)
+                    raw_results.append(result)
+                except Exception as e:
+                    raw_results.append(e)
             valid_analyses = [r for r in raw_results if isinstance(r, dict)]
             if valid_analyses:
                 image_analysis = valid_analyses[0]  # 첫 슬라이드를 대표 이미지로 사용
