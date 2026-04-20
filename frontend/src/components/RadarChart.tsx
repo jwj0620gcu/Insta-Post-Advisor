@@ -71,14 +71,23 @@ export default function RadarChart({ data }: Props) {
         textStyle: { color: "#241628", fontSize: 13 },
       },
     });
+    // 컨테이너가 0px로 init된 경우 강제 resize
+    instanceRef.current.resize();
   }, [data]);
 
   useEffect(() => {
     const handleResize = () => instanceRef.current?.resize();
     window.addEventListener("resize", handleResize);
+
+    // CSS Grid / motion 애니메이션 후 컨테이너 크기 변화 감지
+    const ro = new ResizeObserver(() => instanceRef.current?.resize());
+    if (chartRef.current) ro.observe(chartRef.current);
+
     return () => {
       window.removeEventListener("resize", handleResize);
+      ro.disconnect();
       instanceRef.current?.dispose();
+      instanceRef.current = null;
     };
   }, []);
 
