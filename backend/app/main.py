@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 from app.api.routes import router as api_router
 from app import local_memory
@@ -101,25 +101,17 @@ app.include_router(api_router, prefix="/api")
 from app.api.admin_api import router as admin_router
 app.include_router(admin_router)
 
-# ── Landing page: research whitepaper at / ──
 RESEARCH_HTML = os.path.join(os.path.dirname(__file__), "..", "..", "docs", "research_whitepaper.html")
 
 @app.get("/")
 async def serve_landing():
-    """홈: 연구/랜딩 페이지"""
-    if os.path.isfile(RESEARCH_HTML):
-        return FileResponse(RESEARCH_HTML, media_type="text/html")
-    # Fallback: serve SPA if whitepaper not found
-    if os.path.isdir(FRONTEND_DIST):
-        return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
-    return {"status": "ok", "service": "InstaRx API"}
+    return RedirectResponse(url="/app", status_code=302)
 
 @app.get("/research")
 async def serve_research():
-    """이전 링크 호환 경로."""
     if os.path.isfile(RESEARCH_HTML):
         return FileResponse(RESEARCH_HTML, media_type="text/html")
-    return {"error": "Research page not found"}
+    return RedirectResponse(url="/app", status_code=302)
 
 # ── Legal pages ──
 TERMS_HTML = os.path.join(os.path.dirname(__file__), "..", "..", "docs", "terms.html")
@@ -153,7 +145,7 @@ if os.path.isdir(FRONTEND_DIST):
             if (response.status_code == 404
                     and not path.startswith("/api")
                     and not path.startswith("/assets")
-                    and path not in ("/", "/research", "/terms", "/privacy")
+                    and path not in ("/research", "/terms", "/privacy")
                     and not path.startswith("/admin")):
                 return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
             return response
