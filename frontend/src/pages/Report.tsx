@@ -234,7 +234,7 @@ export default function Report() {
             ))) && (
             <Box sx={{ ...card, mb: sectionGap }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                <Typography sx={{ fontWeight: 600, fontSize: 15, color: "#241628" }}>AI 최적화 방안</Typography>
+                <Typography sx={{ fontWeight: 600, fontSize: 15, color: "#241628" }}>최적화 방안</Typography>
                 {report.optimized_title && report.optimized_content && (
                   <Button
                     size="small"
@@ -346,17 +346,17 @@ export default function Report() {
                 "&:hover": { boxShadow: "0 8px 26px rgba(150,47,191,0.3)", transform: "translateY(-1px)" },
               }}
             >
-              더 최적화하기 — AI 고점수 방안 생성
+              추가 최적화 방안 보기
             </Button>
           ) : (
             <Box sx={{ ...card, mb: sectionGap }}>
               <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#241628", mb: 2 }}>
-                AI 최적화 방안
+                최적화 방안
               </Typography>
               {optimizing && (
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1.5, py: 3 }}>
                   <CircularProgress size={18} sx={{ color: "#d62976" }} />
-                  <Typography sx={{ fontSize: 13, color: "#6c5773" }}>최적화 방안 생성 중...</Typography>
+                  <Typography sx={{ fontSize: 13, color: "#6c5773" }}>생성 중...</Typography>
                 </Box>
               )}
               {optimizePlans.length > 0 && (
@@ -434,19 +434,11 @@ export default function Report() {
           </motion.div>
 
           <motion.div {...sectionAnim(6)}>
-          <Typography sx={{ textAlign: "center", fontSize: 12, color: "#b6a4ba", mt: 3 }}>
-            이 보고서는 AI 멀티 에이전트가 생성했습니다. 참고용으로만 활용하세요
-          </Typography>
-          <Typography sx={{ textAlign: "center", fontSize: 11, color: "#b6a4ba", mt: 1 }}>
-            InstaRx · 문의{" "}
+          <Typography sx={{ textAlign: "center", fontSize: 11, color: "#b6a4ba", mt: 3 }}>
+            InstaRx · 참고용으로만 활용하세요 ·{" "}
             <Typography component="a" href="mailto:jwj0620@gachon.ac.kr"
-              sx={{ fontSize: 11, color: "#a995af", textDecoration: "none", fontWeight: 600, "&:hover": { color: "#d62976" } }}>
-              jwj0620@gachon.ac.kr
-            </Typography>
-            {" · "}
-            <Typography component="a" href="https://github.com" target="_blank"
-              sx={{ fontSize: 11, color: "#a995af", textDecoration: "none", fontWeight: 600, "&:hover": { color: "#d62976" } }}>
-              GitHub
+              sx={{ fontSize: 11, color: "#a995af", textDecoration: "none", "&:hover": { color: "#d62976" } }}>
+              문의
             </Typography>
           </Typography>
           </motion.div>

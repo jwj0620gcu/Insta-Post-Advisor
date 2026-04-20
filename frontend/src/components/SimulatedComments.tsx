@@ -93,7 +93,7 @@ export default function SimulatedComments({ comments: initial, noteTitle = "", n
       {/* AI 예상 요약 */}
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 0.5, mb: 1.5, pb: 1, borderBottom: "1px solid rgba(214,41,118,0.12)" }}>
         <Typography sx={{ fontSize: { xs: 10, sm: 11 }, color: "#8f7b94" }}>
-          AI 시뮬레이션 댓글 {comments.length}개
+          예상 댓글 {comments.length}개
         </Typography>
         <Typography sx={{ fontSize: { xs: 10, sm: 11 }, color: "#d62976", fontWeight: 600 }}>
           예상 총 좋아요 {totalLikes.toLocaleString()}

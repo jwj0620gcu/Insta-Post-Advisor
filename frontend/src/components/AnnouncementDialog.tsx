@@ -110,12 +110,12 @@ function LinkCard({
 const STATS = [
   {
     icon: <WhatshotIcon sx={{ fontSize: 20, color: "#d62976" }} />,
-    val: "AI 진단",
+    val: "5-Agent",
     label: "멀티에이전트",
   },
   {
     icon: <TrendingUpIcon sx={{ fontSize: 20, color: "#f56040" }} />,
-    val: "인스타",
+    val: "인스타그램",
     label: "한국어 특화",
   },
   {
@@ -242,7 +242,7 @@ export default function AnnouncementDialog() {
               lineHeight: 1.7, maxWidth: 380, mx: "auto",
             }}
           >
-            한국 인스타그램 특화 · AI 멀티에이전트 진단 · 완전 무료
+            한국 인스타그램 특화 · 5-Agent 진단 · 완전 무료
           </Typography>
         </Box>
       </Box>
@@ -319,7 +319,7 @@ export default function AnnouncementDialog() {
           <Typography
             sx={{ fontSize: "0.85rem", color: "#5e4965", lineHeight: 1.75, fontWeight: 500 }}
           >
-            InstaRx는 소상공인, 초보 크리에이터, 브랜드 홍보담당자를 위한 한국 인스타그램 진단 서비스입니다. AI 5개 에이전트가 게시물을 분석하고 성장 전략을 제안합니다.
+            인스타그램 게시물을 올리면 5개 에이전트가 점수를 매기고 캡션·해시태그·커버 개선안을 제안합니다.
           </Typography>
         </Box>
 

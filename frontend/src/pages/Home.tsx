@@ -419,7 +419,7 @@ export default function Home() {
           extra_slots: [],
           category: "",
           summary: "",
-          error: errMsg,
+          error: "분석에 실패했습니다",
         },
       }));
     } finally {
@@ -634,14 +634,6 @@ export default function Home() {
           </Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          <Button
-            onClick={() => { setLeaving(true); setTimeout(() => { window.location.href = "/"; }, 350); }}
-            size="small"
-            sx={{ color: "#8f7b94", fontSize: 12, fontWeight: 600, minWidth: "auto", px: 1, borderRadius: "8px",
-              "&:hover": { color: "#d62976", bgcolor: "#fff0f2" } }}
-          >
-            랜딩
-          </Button>
           <Button startIcon={<HistoryOutlined sx={{ fontSize: 14 }} />}
             onClick={() => navigate("/history")} size="small"
             sx={{ color: "#8f7b94", fontSize: 12, fontWeight: 600, minWidth: "auto", px: 1, borderRadius: "8px",
@@ -697,7 +689,7 @@ export default function Home() {
                   게시물 소재 업로드
                 </Typography>
                 <Typography sx={{ fontSize: 12, color: "#8f7b94", mt: 0.25 }}>
-                  인스타 이미지/릴스를 올리면 AI가 제목·본문·카테고리를 자동 인식합니다
+                  이미지/릴스를 올리면 제목·본문·카테고리가 자동으로 입력됩니다
                 </Typography>
               </Box>
               {files.length > 0 && (
@@ -712,8 +704,7 @@ export default function Home() {
 
             {apiReachable === false && (
               <Alert severity="warning" sx={{ fontSize: 12, py: 0.5, borderRadius: "10px" }}>
-                로컬 진단 API(/api/health)에 연결할 수 없습니다. 백엔드를 실행하고 Vite 프록시 포트(기본 8001, frontend/.env.development.local의
-                VITE_API_PROXY_TARGET)를 확인하세요.
+                서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.
               </Alert>
             )}
 
@@ -772,7 +763,7 @@ export default function Home() {
               <Typography sx={{ fontSize: 11, color: "#dc2626", px: 0.5, lineHeight: 1.5 }}>
                 {firstRecognizeError
                   ? `분석 실패: ${firstRecognizeError}`
-                  : "분석 실패. 네트워크를 확인하거나 직접 입력하세요"}
+                  : "분석에 실패했습니다. 직접 입력해 주세요"}
               </Typography>
             )}
 
@@ -795,14 +786,14 @@ export default function Home() {
 
             {videoWithoutImage && allRecognitionDone && !allFailed && (
               <Alert severity="info" sx={{ fontSize: 12, py: 0.75, borderRadius: "10px", flexShrink: 0 }}>
-                릴스만 업로드한 경우, 제목/캡션은 영상 화면에 잘 나타나지 않습니다. 제목이나 캡션이 보이는 스크린샷을 추가하면 AI가 자동으로 입력합니다.
+                캡션이 보이는 스크린샷을 함께 올리면 더 정확하게 분석됩니다.
               </Alert>
             )}
 
             {isFormBlocked && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, px: 1, py: 0.5, borderRadius: "8px", bgcolor: "#eff6ff", flexShrink: 0 }}>
                 <CircularProgress size={12} thickness={5} sx={{ color: "#4f5bd5" }} />
-                <Typography sx={{ fontSize: 12, color: "#4f5bd5", fontWeight: 500 }}>AI 분석 중 — 완료 후 자동으로 입력됩니다</Typography>
+                <Typography sx={{ fontSize: 12, color: "#4f5bd5", fontWeight: 500 }}>분석 완료 후 자동으로 입력됩니다</Typography>
               </Box>
             )}
 
@@ -816,7 +807,7 @@ export default function Home() {
               <Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#241628" }}>제목 / 첫 문장</Typography>
-                  {autoFilled.title && <Typography sx={{ fontSize: 10, color: "#16a34a", fontWeight: 600 }}>AI 자동 입력</Typography>}
+                  {autoFilled.title && <Typography sx={{ fontSize: 10, color: "#16a34a", fontWeight: 600 }}>자동 입력</Typography>}
                 </Box>
                 <TextField required fullWidth size="small" disabled={lockInputs} value={title}
                   onChange={(e) => { setTitle(e.target.value); setUserEdited((p) => ({ ...p, title: true })); }}
@@ -829,7 +820,7 @@ export default function Home() {
               <Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#241628" }}>캡션 본문</Typography>
-                  {autoFilled.content && <Typography sx={{ fontSize: 10, color: "#16a34a", fontWeight: 600 }}>AI 자동 입력</Typography>}
+                  {autoFilled.content && <Typography sx={{ fontSize: 10, color: "#16a34a", fontWeight: 600 }}>자동 입력</Typography>}
                 </Box>
                 <TextField fullWidth multiline rows={isDesktop ? 3 : 3} size="small" disabled={lockInputs} value={content}
                   onChange={(e) => { setContent(e.target.value); setUserEdited((p) => ({ ...p, content: true })); }}
@@ -839,7 +830,7 @@ export default function Home() {
               <Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.75 }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#241628" }}>카테고리</Typography>
-                  {autoFilled.category && <Typography sx={{ fontSize: 10, color: "#16a34a", fontWeight: 600 }}>AI 자동 인식</Typography>}
+                  {autoFilled.category && <Typography sx={{ fontSize: 10, color: "#16a34a", fontWeight: 600 }}>자동 인식</Typography>}
                 </Box>
                 <CategoryPicker value={category} onChange={(v) => { setCategory(v); setUserEdited((p) => ({ ...p, category: true })); }} />
               </Box>
