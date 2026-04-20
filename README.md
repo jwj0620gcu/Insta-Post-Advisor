@@ -8,7 +8,7 @@
 
 <br>
 
-[**기술 아키텍처**](#기술-아키텍처) &nbsp;&nbsp;|&nbsp;&nbsp; [**빠른 시작**](#빠른-시작) &nbsp;&nbsp;|&nbsp;&nbsp; [**데모**](https://insta-post-advisor.onrender.com)
+[**기술 아키텍처**](#기술-아키텍처) &nbsp;&nbsp;|&nbsp;&nbsp; [**빠른 시작**](#빠른-시작) &nbsp;&nbsp;|&nbsp;&nbsp; [**라이브 데모 →**](https://insta-post-advisor.onrender.com/app)
 
 <br>
 
