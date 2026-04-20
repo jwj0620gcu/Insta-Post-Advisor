@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
   const target = env.VITE_API_PROXY_TARGET || 'http://localhost:8001'
 
   return {
-    base: '/app/',
+    base: '/',
     plugins: [react()],
     server: {
       proxy: {
