@@ -168,10 +168,7 @@ def _build_stable_scores(
 
 
 def _normalize_issues_items(raw: list | None) -> list[dict]:
-    """
-    issues를 list[dict]로 정규화하여 DiagnoseResponse 형식에 맞춤.
-    심사 실패 시 BaseAgent가 문자열 목록을 반환할 수 있음.
-    """
+    # BaseAgent가 문자열 목록을 반환할 수 있어 dict로 정규화
     out: list[dict] = []
     for it in raw or []:
         if isinstance(it, dict):
@@ -181,16 +178,11 @@ def _normalize_issues_items(raw: list | None) -> list[dict]:
             row.setdefault("from_agent", row.get("from_agent") or "")
             out.append(row)
         else:
-            out.append({
-                "severity": "high",
-                "description": str(it),
-                "from_agent": "시스템",
-            })
+            out.append({"severity": "high", "description": str(it), "from_agent": "시스템"})
     return out
 
 
 def _normalize_suggestions_items(raw: list | None) -> list[dict]:
-    """suggestions를 list[dict]로 정규화 (priority / description / expected_impact)."""
     out: list[dict] = []
     for it in raw or []:
         if isinstance(it, dict):
@@ -200,11 +192,7 @@ def _normalize_suggestions_items(raw: list | None) -> list[dict]:
                 "expected_impact": str(it.get("expected_impact", "")),
             })
         else:
-            out.append({
-                "priority": 1,
-                "description": str(it),
-                "expected_impact": "",
-            })
+            out.append({"priority": 1, "description": str(it), "expected_impact": ""})
     return out
 
 
@@ -271,11 +259,8 @@ class Orchestrator:
         title_analysis = self.text_analyzer.analyze_title(title)
         content_analysis = self.text_analyzer.analyze_content(content)
 
-        # 캐러셀 여부 판단: cover_images가 2장 이상이면 전체 슬라이드 분석
         all_images: list[bytes] = []
-        if cover_images and len(cover_images) >= 2:
-            all_images = cover_images
-        elif cover_images and len(cover_images) == 1:
+        if cover_images:
             all_images = cover_images
         elif cover_image:
             all_images = [cover_image]

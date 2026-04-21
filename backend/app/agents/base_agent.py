@@ -9,7 +9,7 @@ import os
 import logging
 import re
 import asyncio
-from typing import Optional
+from typing import Any, Callable, Awaitable, Optional
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -259,6 +259,73 @@ class BaseAgent:
         self.model = model or MODEL_PRO
         self.client = _get_client()
 
+    async def _run_llm_with_retry(
+        self,
+        create_fn: Callable[[bool], Awaitable[Any]],
+        skip_json_mode: bool,
+        label: str,
+    ) -> tuple[Any, Optional[BaseException]]:
+        """JSON 모드 + rate-limit 재시도 래퍼. (response, last_error) 반환."""
+        attempts: list[bool] = [] if skip_json_mode else [True]
+        attempts.append(False)
+        rate_limit_retries = max(0, int(os.getenv("LLM_RATE_LIMIT_RETRIES", "2")))
+        response = None
+        last_err: Optional[BaseException] = None
+
+        for use_json in attempts:
+            rl_retry = 0
+            while True:
+                try:
+                    response = await create_fn(use_json)
+                    break
+                except Exception as e:
+                    last_err = e
+                    if use_json and _should_retry_openai_without_json_format(e):
+                        logger.info("%s: response_format=json_object 미지원, 재시도: %s", label, e)
+                        break
+                    if _is_rate_limit_error(e) and rl_retry < rate_limit_retries:
+                        wait_s = _retry_after_seconds_from_error(e)
+                        rl_retry += 1
+                        logger.warning(
+                            "rate limit %.2fs 대기 후 재시도 (%d/%d): %s",
+                            wait_s, rl_retry, rate_limit_retries, e,
+                        )
+                        await asyncio.sleep(wait_s)
+                        continue
+                    logger.warning("%s 호출 실패: %s", label, e)
+                    return None, e
+            if response is not None:
+                break
+        return response, last_err
+
+    def _parse_llm_response(self, response: Any, label: str = "LLM") -> dict:
+        """chat.completions 응답에서 JSON dict를 파싱해 반환한다."""
+        raw: Optional[str] = None
+        try:
+            raw = response.choices[0].message.content
+            try:
+                result = json.loads((raw or "").strip())
+            except json.JSONDecodeError:
+                result = _parse_json_from_llm_text(raw)
+            if not isinstance(result, dict):
+                logger.warning("%s 응답의 최상위 타입이 object가 아님: %s", label, str(raw)[:400])
+                return self._error_response(f"{label}이 JSON object가 아닌 값을 반환했습니다")
+            usage = response.usage
+            if usage:
+                result["_meta"] = {
+                    "prompt_tokens": usage.prompt_tokens,
+                    "completion_tokens": usage.completion_tokens,
+                    "total_tokens": usage.total_tokens,
+                    "model": response.model,
+                }
+            return result
+        except json.JSONDecodeError:
+            logger.warning("%s 원본 출력(비 JSON): %s", label, (raw or "")[:500])
+            return self._error_response(f"{label}이 JSON 형식이 아닌 내용을 반환했습니다")
+        except Exception as e:
+            logger.warning("%s 응답 파싱 실패: %s", label, e)
+            return self._error_response(str(e))
+
     async def call_llm(
         self,
         user_message: str,
@@ -273,7 +340,6 @@ class BaseAgent:
         return await self._call_openai(sys_prompt, user_message, max_tokens=max_tokens)
 
     async def _call_openai(self, sys_prompt: str, user_message: str, max_tokens: int = 2048) -> dict:
-        """OpenAI 호환 호출(MiMo 포함) + JSON 모드 호환 처리."""
         messages = [
             {"role": "system", "content": sys_prompt},
             {"role": "user", "content": user_message},
@@ -283,12 +349,11 @@ class BaseAgent:
         skip_json_mode = os.getenv("LLM_SKIP_JSON_RESPONSE_FORMAT", "").strip() in ("1", "true", "yes")
 
         async def _create(with_json_object: bool):
-            kwargs = {
+            kwargs: dict = {
                 "model": self.model,
                 "messages": messages,
                 "temperature": float(os.getenv("LLM_TEMPERATURE", "0")),
             }
-            # seed for reproducibility (if supported by provider)
             seed_val = os.getenv("LLM_SEED", "")
             if seed_val:
                 kwargs["seed"] = int(seed_val)
@@ -300,66 +365,10 @@ class BaseAgent:
                 kwargs["response_format"] = {"type": "json_object"}
             return await self.client.chat.completions.create(**kwargs)
 
-        response = None
-        last_err: Optional[BaseException] = None
-        attempts: list[bool] = []
-        if not skip_json_mode:
-            attempts.append(True)
-        attempts.append(False)
-        rate_limit_retries = max(0, int(os.getenv("LLM_RATE_LIMIT_RETRIES", "2")))
-
-        for use_json in attempts:
-            rl_retry = 0
-            while True:
-                try:
-                    response = await _create(with_json_object=use_json)
-                    break
-                except Exception as e:
-                    last_err = e
-                    if use_json and _should_retry_openai_without_json_format(e):
-                        logger.info("게이트웨이가 response_format=json_object를 지원하지 않아 해당 파라미터 없이 재시도: %s", e)
-                        break
-                    if _is_rate_limit_error(e) and rl_retry < rate_limit_retries:
-                        wait_s = _retry_after_seconds_from_error(e)
-                        rl_retry += 1
-                        logger.warning(
-                            "Rate limit 감지, %.2fs 대기 후 재시도 (%d/%d): %s",
-                            wait_s, rl_retry, rate_limit_retries, e,
-                        )
-                        await asyncio.sleep(wait_s)
-                        continue
-                    logger.warning("OpenAI 호출 실패: %s", e)
-                    return self._error_response(str(e))
-            if response is not None:
-                break
-
+        response, last_err = await self._run_llm_with_retry(_create, skip_json_mode, "LLM")
         if response is None:
             return self._error_response(str(last_err) if last_err else "LLM 응답 없음")
-
-        try:
-            raw = response.choices[0].message.content
-            try:
-                result = json.loads(raw or "")
-            except json.JSONDecodeError:
-                result = _parse_json_from_llm_text(raw)
-            if not isinstance(result, dict):
-                logger.warning("LLM 응답의 최상위 타입이 object가 아님: %s", str(raw)[:400])
-                return self._error_response("LLM이 JSON object가 아닌 값을 반환했습니다(기대값: {...})")
-            usage = response.usage
-            if usage:
-                result["_meta"] = {
-                    "prompt_tokens": usage.prompt_tokens,
-                    "completion_tokens": usage.completion_tokens,
-                    "total_tokens": usage.total_tokens,
-                    "model": response.model,
-                }
-            return result
-        except json.JSONDecodeError:
-            logger.warning("LLM 원본 출력(비 JSON): %s", (raw or "")[:500])
-            return self._error_response("LLM이 JSON 형식이 아닌 내용을 반환했습니다")
-        except Exception as e:
-            logger.warning("LLM 응답 파싱 실패: %s", e)
-            return self._error_response(str(e))
+        return self._parse_llm_response(response, "LLM")
 
     async def call_llm_vision(
         self,
@@ -368,10 +377,7 @@ class BaseAgent:
         system_prompt: Optional[str] = None,
         max_tokens: int = 2000,
     ) -> dict:
-        """
-        멀티모달 모델(MODEL_OMNI)로 이미지를 분석한다.
-        image_bytes는 JPEG/PNG/WebP 등 원본 바이트여야 한다.
-        """
+        """멀티모달 모델(MODEL_OMNI)로 이미지를 분석한다."""
         sys_prompt = system_prompt or self.system_prompt
         mimo = _is_mimo_openai_compat()
         max_out = max_tokens or int(os.getenv("LLM_MAX_COMPLETION_TOKENS", "2048"))
@@ -402,66 +408,10 @@ class BaseAgent:
                 kwargs["response_format"] = {"type": "json_object"}
             return await self.client.chat.completions.create(**kwargs)
 
-        response = None
-        last_err: Optional[BaseException] = None
-        attempts: list[bool] = []
-        if not skip_json_mode:
-            attempts.append(True)
-        attempts.append(False)
-        rate_limit_retries = max(0, int(os.getenv("LLM_RATE_LIMIT_RETRIES", "2")))
-
-        for use_json in attempts:
-            rl_retry = 0
-            while True:
-                try:
-                    response = await _create(with_json_object=use_json)
-                    break
-                except Exception as e:
-                    last_err = e
-                    if use_json and _should_retry_openai_without_json_format(e):
-                        logger.info("멀티모달 게이트웨이가 response_format=json_object를 지원하지 않아 파라미터 없이 재시도: %s", e)
-                        break
-                    if _is_rate_limit_error(e) and rl_retry < rate_limit_retries:
-                        wait_s = _retry_after_seconds_from_error(e)
-                        rl_retry += 1
-                        logger.warning(
-                            "멀티모달 rate limit 감지, %.2fs 대기 후 재시도 (%d/%d): %s",
-                            wait_s, rl_retry, rate_limit_retries, e,
-                        )
-                        await asyncio.sleep(wait_s)
-                        continue
-                    logger.warning("멀티모달 호출 실패: %s", e)
-                    return self._error_response(str(e))
-            if response is not None:
-                break
-
+        response, last_err = await self._run_llm_with_retry(_create, skip_json_mode, "멀티모달")
         if response is None:
             return self._error_response(str(last_err) if last_err else "멀티모달 LLM 응답 없음")
-
-        raw: Optional[str] = None
-        try:
-            raw = response.choices[0].message.content
-            try:
-                result = json.loads((raw or "").strip())
-            except json.JSONDecodeError:
-                result = _parse_json_from_llm_text(raw)
-            if not isinstance(result, dict):
-                return self._error_response("멀티모달 모델이 JSON object가 아닌 값을 반환했습니다")
-            usage = response.usage
-            if usage:
-                result["_meta"] = {
-                    "prompt_tokens": usage.prompt_tokens,
-                    "completion_tokens": usage.completion_tokens,
-                    "total_tokens": usage.total_tokens,
-                    "model": response.model,
-                }
-            return result
-        except json.JSONDecodeError:
-            logger.warning("멀티모달 원본 출력(비 JSON): %s", (raw or "")[:800])
-            return self._error_response("멀티모달 모델이 JSON 형식이 아닌 내용을 반환했습니다")
-        except Exception as e:
-            logger.warning("멀티모달 응답 파싱 실패: %s", e)
-            return self._error_response(str(e))
+        return self._parse_llm_response(response, "멀티모달")
 
     def _error_response(self, error_msg: str) -> dict:
         lower_msg = (error_msg or "").lower()

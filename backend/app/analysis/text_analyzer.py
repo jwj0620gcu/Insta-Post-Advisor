@@ -122,32 +122,8 @@ class TextAnalyzer:
             "info_density": round(info_density, 3),
         }
 
-    def _extract_keywords(self, text: str) -> list[tuple[str, float]]:
-        if not text:
-            return []
-
-        # kiwi로 명사/형용사 추출
-        if _KIWI_AVAILABLE and _kiwi is not None:
-            try:
-                result = _kiwi.analyze(text)
-                tokens = []
-                for token, pos, *_ in result[0][0]:
-                    # NNG(일반명사), NNP(고유명사), VA(형용사), VV(동사) 추출
-                    if pos.startswith(("NN", "VA", "VV")) and len(token) > 1:
-                        tokens.append(token)
-                freq: dict[str, int] = {}
-                for t in tokens:
-                    freq[t] = freq.get(t, 0) + 1
-                top = sorted(freq.items(), key=lambda x: x[1], reverse=True)[:10]
-                if not top:
-                    return []
-                max_freq = float(top[0][1])
-                return [(w, c / max_freq) for w, c in top]
-            except Exception:
-                pass
-
-        # 폴백: regex 토큰화 + 단순 빈도
-        tokens = [t for t in self._tokenize(text) if len(t) > 1]
+    @staticmethod
+    def _rank_by_frequency(tokens: list[str]) -> list[tuple[str, float]]:
         freq: dict[str, int] = {}
         for t in tokens:
             freq[t] = freq.get(t, 0) + 1
@@ -156,6 +132,25 @@ class TextAnalyzer:
             return []
         max_freq = float(top[0][1])
         return [(w, c / max_freq) for w, c in top]
+
+    def _extract_keywords(self, text: str) -> list[tuple[str, float]]:
+        if not text:
+            return []
+
+        if _KIWI_AVAILABLE and _kiwi is not None:
+            try:
+                result = _kiwi.analyze(text)
+                tokens = [
+                    token for token, pos, *_ in result[0][0]
+                    # NNG(일반명사), NNP(고유명사), VA(형용사), VV(동사)
+                    if pos.startswith(("NN", "VA", "VV")) and len(token) > 1
+                ]
+                return self._rank_by_frequency(tokens)
+            except Exception:
+                pass
+
+        tokens = [t for t in self._tokenize(text) if len(t) > 1]
+        return self._rank_by_frequency(tokens)
 
     def _tokenize(self, text: str) -> list[str]:
         if _KIWI_AVAILABLE and _kiwi is not None:

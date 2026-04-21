@@ -166,8 +166,6 @@ if os.path.isdir(FRONTEND_DIST):
 @app.get("/api/health")
 async def health():
     """상세 헬스체크(데이터베이스 연결 확인 포함)."""
-    import sqlite3
-    import os
     db_path = os.path.join(os.path.dirname(__file__), "..", "data", "baseline.db")
     db_ok = False
     note_count = 0
