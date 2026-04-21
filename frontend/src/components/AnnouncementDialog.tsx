@@ -143,6 +143,10 @@ export default function AnnouncementDialog() {
 
   const handleClose = () => {
     setOpen(false);
+  };
+
+  const handleNeverShow = () => {
+    setOpen(false);
     try {
       localStorage.setItem(STORAGE_KEY, Date.now().toString());
     } catch {
@@ -345,28 +349,36 @@ export default function AnnouncementDialog() {
         </Box>
 
         {/* CTA */}
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth
-          size="large"
-          onClick={handleClose}
-          sx={{
-            py: 1.6, fontSize: "0.95rem", fontWeight: 700,
-            borderRadius: "14px", textTransform: "none",
-          }}
-        >
-          Insta-Advisor 시작하기
-        </Button>
-
-        <Typography
-          sx={{
-            textAlign: "center", fontSize: "0.68rem",
-            color: "#b6a4ba", mt: 1.5, letterSpacing: "0.3px",
-          }}
-        >
-          이 팝업은 첫 방문 시에만 표시됩니다
-        </Typography>
+        <Box sx={{ display: "flex", gap: 1.5 }}>
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={handleNeverShow}
+            sx={{
+              flex: 1, py: 1.5, fontSize: "0.85rem", fontWeight: 600,
+              borderRadius: "14px", textTransform: "none",
+              borderColor: "rgba(214,41,118,0.3)", color: "#a07aaa",
+              "&:hover": {
+                borderColor: "rgba(214,41,118,0.6)",
+                background: "rgba(214,41,118,0.05)",
+              },
+            }}
+          >
+            다시 안보기
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            onClick={handleClose}
+            sx={{
+              flex: 2, py: 1.5, fontSize: "0.95rem", fontWeight: 700,
+              borderRadius: "14px", textTransform: "none",
+            }}
+          >
+            시작하기
+          </Button>
+        </Box>
       </DialogContent>
     </Dialog>
   );
