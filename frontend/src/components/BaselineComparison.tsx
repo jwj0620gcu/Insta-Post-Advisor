@@ -26,7 +26,7 @@ export default function BaselineComparison({ category, userTitle, userTags }: Pr
       try {
         const raw = await getBaseline(category);
         if (cancelled) return;
-        // API returns { category, stats: { ... } } — unwrap
+        // API 응답이 { category, stats: { ... } } 형태이면 stats만 추출
         const data = raw.stats || raw;
 
         const m: Metric[] = [

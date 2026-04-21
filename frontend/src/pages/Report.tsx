@@ -86,7 +86,7 @@ export default function Report() {
     ? params.tags.split(",").filter(Boolean)
     : Array.isArray(params.tags) ? params.tags : [];
 
-  // Re-score: both original and optimized with SAME preScore model for fair comparison
+  // 원본·최적화 모두 동일 preScore 모델로 재채점해야 공정한 비교가 가능
   const [originalPreScore, setOriginalPreScore] = useState<number | null>(null);
   const [optimizedPreScore, setOptimizedPreScore] = useState<number | null>(null);
   const [rescoring, setRescoring] = useState(false);
@@ -104,11 +104,11 @@ export default function Report() {
     }).catch(() => {}).finally(() => setRescoring(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Only show comparison if optimized is actually higher
+  // 최적화 점수가 실제로 높을 때만 비교 표시
   const scoreDelta = (originalPreScore != null && optimizedPreScore != null) ? Math.round(optimizedPreScore - originalPreScore) : null;
   const showScoreComparison = scoreDelta != null && scoreDelta > 0;
 
-  // Staggered section reveal
+  // 섹션 순차 등장
   const [visibleSections, setVisibleSections] = useState(0);
   useEffect(() => {
     let i = 0;
@@ -120,7 +120,7 @@ export default function Report() {
     return () => clearInterval(timer);
   }, []);
 
-  // Optimization engine state
+  // 최적화 엔진 상태
   const [optimizing, setOptimizing] = useState(false);
   const [optimizePlans, setOptimizePlans] = useState<OptimizePlan[]>([]);
   const [showOptPanel, setShowOptPanel] = useState(false);

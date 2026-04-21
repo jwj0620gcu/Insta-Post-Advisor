@@ -1,4 +1,4 @@
-﻿"""
+"""
 다차원 스크린샷 업로드 + AI 빠른 인식 + 심층 분석 API.
 커버/본문/프로필/댓글 스크린샷 및 영상 업로드를 지원한다.
 """
@@ -324,7 +324,7 @@ async def _vision_call(
     except asyncio.TimeoutError:
         return {"error": "비전 인식 시간 초과(60초)", "slot_type": "other"}
     raw = resp.choices[0].message.content or ""
-    # Try multiple JSON extraction strategies
+    # JSON 추출 전략 순차 시도
     clean = raw.strip()
     # 1) Remove markdown code fence
     if clean.startswith("```"):
@@ -441,7 +441,7 @@ def _normalize_quick_recognition_fields(
     slot_type = _normalize_slot_type(result.get("slot_type", ""))
     result["slot_type"] = slot_type
     result["extra_slots"] = _normalize_extra_slots(result.get("extra_slots"))
-    # Normalize flat likes/publisher into engagement_signal/publisher for frontend
+    # likes/publisher 필드를 프론트엔드 형식(engagement_signal/publisher)으로 정규화
     if "likes" in result and "engagement_signal" not in result:
         likes = int(result.pop("likes", 0) or 0)
         result["engagement_signal"] = {"likes_visible": likes, "collects_visible": 0, "comments_visible": 0, "is_high_engagement": likes > 1000}

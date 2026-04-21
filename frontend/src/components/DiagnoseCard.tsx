@@ -129,7 +129,7 @@ export default function DiagnoseCard({ report, title }: Props) {
         <div style={{ padding: "12px 24px", borderTop: "1px solid rgba(214,41,118,0.14)" }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: "#8f7b94", marginBottom: 6 }}>주요 발견</div>
           {(() => {
-            // Try issues first, fallback to suggestions
+            // issues 우선, 없으면 suggestions에서 가져옴
             const items = (report.issues || [])
               .map(it => typeof it === "string" ? it : (it.description || ""))
               .filter(Boolean);

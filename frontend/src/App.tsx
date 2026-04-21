@@ -9,14 +9,14 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import AnnouncementDialog from "./components/AnnouncementDialog";
 import "./index.css";
 
-/* ── Lazy-loaded pages ── */
+/* ── 지연 로딩 페이지 ── */
 const Home = lazy(() => import("./pages/Home"));
 const Diagnosing = lazy(() => import("./pages/Diagnosing"));
 const Report = lazy(() => import("./pages/Report"));
 const History = lazy(() => import("./pages/History"));
 const ScreenshotAnalysis = lazy(() => import("./pages/ScreenshotAnalysis"));
 
-/* ── Minimal loading fallback ── */
+/* ── 최소 로딩 폴백 ── */
 function PageLoader() {
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
@@ -26,10 +26,7 @@ function PageLoader() {
   );
 }
 
-/**
- * Animated route wrapper — gives every page enter/exit transitions
- * powered by Framer Motion's AnimatePresence.
- */
+/** 페이지 전환 애니메이션 래퍼 (Framer Motion AnimatePresence) */
 function AnimatedRoutes() {
   const location = useLocation();
 
@@ -122,7 +119,7 @@ function AnimatedRoutes() {
 }
 
 /**
- * Insta-Advisor Root Component
+ * 루트 컴포넌트
  */
 function App() {
   return (

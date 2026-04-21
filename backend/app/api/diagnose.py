@@ -352,10 +352,10 @@ async def diagnose_note(
     cover_images: Optional[list[UploadFile]] = File(None),
     video_file: Optional[UploadFile] = File(None),
 ):
-    """Receive note content and run multi-agent diagnosis."""
+    """게시물 콘텐츠를 받아 멀티 에이전트 진단을 실행한다."""
     from app.agents.orchestrator import Orchestrator
 
-    # Collect image files
+    # 이미지 파일 수집
     image_files: list[UploadFile] = []
     if cover_image is not None:
         image_files.append(cover_image)
@@ -377,7 +377,7 @@ async def diagnose_note(
     if len(parsed_images) > 1:
         logger.info("Received %d images; carousel analysis will be applied", len(parsed_images))
 
-    # Video analysis via MiMo omni
+    # 영상 분석
     video_analysis: Optional[dict] = None
 
     if video_bytes is not None:
@@ -470,7 +470,7 @@ async def diagnose_note(
         cover_images=parsed_images if len(parsed_images) > 1 else None,
         video_analysis=video_analysis,
     )
-    # Log usage
+    # 사용량 기록
     _usage = report.pop("_usage", {})
     log_usage(
         ip=get_client_ip(request),
@@ -519,7 +519,7 @@ async def diagnose_stream(
     from app.agents.orchestrator import Orchestrator
     from app.agents.research_data import pre_score as _pre_score
 
-    # Parse inputs (same as /diagnose)
+    # 입력 파싱 (/diagnose와 동일)
     image_files: list[UploadFile] = []
     if cover_image is not None:
         image_files.append(cover_image)
@@ -627,7 +627,7 @@ async def diagnose_stream(
                     video_analysis=video_analysis,
                     progress_cb=_progress,
                 )
-                # Log usage from stream endpoint
+                # 사용량 기록 from stream endpoint
                 from app.api.usage_tracker import get_client_ip, log_usage
                 _usage = report.pop("_usage", {})
                 log_usage(

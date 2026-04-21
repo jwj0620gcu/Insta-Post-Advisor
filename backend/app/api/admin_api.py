@@ -36,13 +36,13 @@ def _get_stats() -> dict:
         conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
 
-        # Notes
+        # 노트 통계
         cur.execute("SELECT COUNT(*) FROM notes")
         stats["total_notes"] = cur.fetchone()[0]
         cur.execute("SELECT category, COUNT(*) FROM notes GROUP BY category ORDER BY COUNT(*) DESC")
         stats["notes_by_category"] = {r[0]: r[1] for r in cur.fetchall()}
 
-        # Usage log
+        # 사용 로그
         try:
             cur.execute("SELECT COUNT(*) FROM usage_log")
             stats["total_requests"] = cur.fetchone()[0]
@@ -54,28 +54,28 @@ def _get_stats() -> dict:
             avg = cur.fetchone()[0]
             stats["avg_duration_sec"] = round(avg, 1) if avg else 0
 
-            # Today
+            # 오늘 통계
             cur.execute("SELECT COUNT(*), COUNT(DISTINCT ip) FROM usage_log WHERE date(created_at)=date('now')")
             row = cur.fetchone()
             stats["today_requests"] = row[0]
             stats["today_ips"] = row[1]
 
-            # By category
+            # 카테고리별
             cur.execute("SELECT category, COUNT(*) FROM usage_log GROUP BY category ORDER BY COUNT(*) DESC")
             stats["usage_by_category"] = {r[0]: r[1] for r in cur.fetchall()}
 
-            # Top IPs
+            # 상위 IP
             cur.execute("SELECT ip, COUNT(*) as c FROM usage_log GROUP BY ip ORDER BY c DESC LIMIT 15")
             stats["top_ips"] = [{"ip": r[0], "count": r[1]} for r in cur.fetchall()]
 
-            # Recent 20
+            # 최근 20건
             cur.execute("SELECT ip, action, title, category, total_tokens, duration_sec, status, created_at FROM usage_log ORDER BY created_at DESC LIMIT 20")
             stats["recent_usage"] = [
                 {"ip": r[0], "action": r[1], "title": (r[2] or "")[:30], "category": r[3], "tokens": r[4], "duration": r[5], "status": r[6], "time": r[7]}
                 for r in cur.fetchall()
             ]
 
-            # Hourly distribution (last 24h)
+            # 시간대별 분포 (최근 24시간)
             cur.execute("""
                 SELECT strftime('%H', created_at) as hour, COUNT(*) as c
                 FROM usage_log WHERE created_at > datetime('now', '-24 hours')
@@ -87,7 +87,7 @@ def _get_stats() -> dict:
             stats["unique_ips"] = 0
             stats["recent_usage"] = []
 
-        # Engagement
+        # 인게이지먼트 통계
         cur.execute("""
             SELECT category, metric_name, metric_value FROM baseline_stats
             WHERE metric_name IN ('avg_likes','avg_collects','avg_comments','viral_rate')

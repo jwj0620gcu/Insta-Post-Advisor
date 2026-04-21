@@ -90,7 +90,7 @@ def _resolve_openai_base_url() -> Optional[str]:
         raw = ""
     if raw:
         return raw.rstrip("/")
-    # Anthropic/Gemini providers are routed via OpenAI-compatible client endpoints.
+    # Anthropic/Gemini는 OpenAI 호환 엔드포인트로 라우팅
     if provider == "anthropic":
         return "https://api.anthropic.com/v1"
     if provider == "gemini":

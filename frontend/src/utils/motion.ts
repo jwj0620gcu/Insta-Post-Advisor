@@ -209,7 +209,7 @@ export function countUp(
     const elapsed = timestamp - startTime;
     const progress = Math.min(elapsed / duration, 1);
 
-    // Ease-out cubic for a satisfying deceleration
+    // ease-out cubic: 감속 애니메이션
     const easedProgress = 1 - Math.pow(1 - progress, 3);
     const currentValue = Math.round(easedProgress * target);
 

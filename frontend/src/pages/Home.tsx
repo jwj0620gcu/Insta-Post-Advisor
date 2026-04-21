@@ -25,7 +25,7 @@ function hasHangul(text: string): boolean {
 
 /** 카테고리 라벨 -> 내부 key 매핑 */
 const CAT_MAP: Record<string, string> = {
-  // Korean
+  // 한국어 라벨
   "맛집": "food", "카페": "food", "맛집/카페": "food", "음식": "food",
   "패션": "fashion", "뷰티": "fashion", "패션/뷰티": "fashion", "코디": "fashion",
   "운동": "fitness", "헬스": "fitness", "운동/건강": "fitness", "건강": "fitness",
@@ -35,7 +35,7 @@ const CAT_MAP: Record<string, string> = {
   "정보": "education", "교육": "education", "정보/교육": "education",
   "쇼핑": "shop", "리뷰": "shop", "쇼핑/리뷰": "shop",
 
-  // English keys pass through
+  // 영어 키는 그대로 통과
   "food": "food",
   "fashion": "fashion",
   "fitness": "fitness",
@@ -70,7 +70,7 @@ function SmoothProgressBar({ done, total }: { done: number; total: number }) {
   targetRef.current = realPct;
 
   useEffect(() => {
-    // Tick every 200ms, creep toward 90% slowly, jump to real when real > smooth
+    // 200ms마다 tick — 실제 진행률보다 느리게 90%까지 기어가고, 실제 값이 앞서면 바로 점프
     const timer = setInterval(() => {
       setSmooth((prev) => {
         const target = targetRef.current;
@@ -83,7 +83,7 @@ function SmoothProgressBar({ done, total }: { done: number; total: number }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Snap to 100 when all done
+  // 완료 시 100으로 즉시 맞춤
   useEffect(() => {
     if (realPct >= 100) setSmooth(100);
   }, [realPct]);
@@ -529,7 +529,7 @@ export default function Home() {
   const isFormBlocked = files.length > 0 && !allRecognitionDone;
 
   const [submitError, setSubmitError] = useState("");
-  // Auto-clear error when user fixes the condition
+  // 조건 해소 시 에러 자동 제거
   useEffect(() => { if (submitError) setSubmitError(""); }, [files.length, title]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = () => {
@@ -537,7 +537,7 @@ export default function Home() {
     if (!title.trim()) { setSubmitError("제목/첫 문장을 입력하세요"); return; }
     if (lockInputs || isFormBlocked) { setSubmitError("AI 분석 중입니다. 잠시 기다려주세요"); return; }
     setSubmitError("");
-    // Check if any recognition result shows high engagement
+    // 인식 결과 중 고인게이지먼트 게시물이 있는지 확인
     const hasHighEngagement = successResults.some(r => r.engagement_signal?.is_high_engagement);
     navigate("/diagnosing", {
       state: {
@@ -574,7 +574,7 @@ export default function Home() {
   const hasRecogSuccess = successResults.length > 0;
   const [leaving, setLeaving] = useState(false);
 
-  // Reset leaving on mount (browser back button fix)
+  // 마운트 시 leaving 초기화 (브라우저 뒤로가기 대응)
   useEffect(() => { setLeaving(false); }, []);
 
   return (

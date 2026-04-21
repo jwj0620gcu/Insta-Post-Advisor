@@ -538,7 +538,7 @@ class Orchestrator:
         debate_records = []
         debate_tokens = 0
 
-        # Build all prompts first
+        # 토론 프롬프트 선조립
         prompts = []
         for i, agent in enumerate(agents):
             other_opinions = []
@@ -597,9 +597,8 @@ class Orchestrator:
                     debate_tokens += meta.get("total_tokens", 0)
                 result["agent_name"] = agents[idx].agent_name
                 debate_records.append(result)
-                # Emit progress with debate preview text
+                # 반박 > 추가 > 동의 순으로 가장 흥미로운 발언을 프리뷰로 사용
                 name = agent_names[idx] if idx < len(agent_names) else agents[idx].agent_name
-                # Pick the most interesting snippet: first disagreement > addition > agreement
                 snippets = (result.get("disagreements") or []) + (result.get("additions") or []) + (result.get("agreements") or [])
                 preview = snippets[0][:80] if snippets else f"{name} 발언 완료"
                 if progress_cb:
@@ -648,7 +647,7 @@ class Orchestrator:
             overall_score = float(final_report.get("score", 0))
         else:
             overall_score = float(final_report.get("overall_score", 50))
-        # Use stable overall if available
+        # stable_scores가 있으면 결정론적 overall 사용
         if stable_scores:
             overall_score = round(stable_scores.get("overall", overall_score))
         else:
