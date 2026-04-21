@@ -13,6 +13,7 @@
 </div>
 
 ---
+<img width="357" height="357" alt="26562" src="https://github.com/user-attachments/assets/34ddf658-97f2-449f-b930-98321d131bb0" />
 
 ## 왜 만들었나 — 페인 포인트
 
