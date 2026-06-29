@@ -39,3 +39,9 @@ services:
         value: whisper-large-v3-turbo
       - key: VIDEO_STT_LANGUAGE
         value: ko
+      # === 영속 저장 (Turso/libSQL) — 재배포 시 진단 이력/사용로그 유지 ===
+      # 미설정 시 로컬 파일로 폴백(무료 플랜에서는 재배포마다 초기화됨)
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false

@@ -3,26 +3,16 @@
 """
 import json
 import logging
-import os
-import sqlite3
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query
 
 from app.models.schemas import HistoryCreateRequest, HistoryListItem, HistoryDetail
 from app import local_memory
+from app.db import get_runtime_connection
 
 router = APIRouter()
 logger = logging.getLogger("insta-advisor.history")
-
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "baseline.db")
-
-
-def _get_conn() -> sqlite3.Connection:
-    """SQLite 연결을 열고 `row_factory=Row`로 설정한다."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
 
 
 @router.post("/history", response_model=dict)
@@ -37,7 +27,7 @@ async def create_history(req: HistoryCreateRequest):
     overall_score = report.get("overall_score", 0)
     grade = report.get("grade", "")
 
-    conn = _get_conn()
+    conn = get_runtime_connection()
     try:
         conn.execute(
             """INSERT INTO diagnosis_history
@@ -72,7 +62,7 @@ async def list_history(
     @param limit - 페이지당 개수(기본 20, 최대 100)
     @param offset - 오프셋
     """
-    conn = _get_conn()
+    conn = get_runtime_connection()
     try:
         rows = conn.execute(
             """SELECT id, title, category, overall_score, grade, created_at
@@ -84,14 +74,15 @@ async def list_history(
     finally:
         conn.close()
 
+    # 컬럼 순서: id, title, category, overall_score, grade, created_at
     return [
         HistoryListItem(
-            id=r["id"],
-            title=r["title"],
-            category=r["category"],
-            overall_score=r["overall_score"] or 0,
-            grade=r["grade"] or "",
-            created_at=r["created_at"] or "",
+            id=r[0],
+            title=r[1],
+            category=r[2],
+            overall_score=r[3] or 0,
+            grade=r[4] or "",
+            created_at=r[5] or "",
         )
         for r in rows
     ]
@@ -103,7 +94,7 @@ async def get_history(record_id: str):
     단일 이력 상세를 조회한다(전체 report 포함).
     @param record_id - UUID
     """
-    conn = _get_conn()
+    conn = get_runtime_connection()
     try:
         row = conn.execute(
             """SELECT id, title, category, overall_score, grade, report_json, created_at
@@ -116,14 +107,15 @@ async def get_history(record_id: str):
     if not row:
         raise HTTPException(404, "기록을 찾을 수 없습니다")
 
+    # 컬럼 순서: id, title, category, overall_score, grade, report_json, created_at
     return HistoryDetail(
-        id=row["id"],
-        title=row["title"],
-        category=row["category"],
-        overall_score=row["overall_score"] or 0,
-        grade=row["grade"] or "",
-        created_at=row["created_at"] or "",
-        report=json.loads(row["report_json"]),
+        id=row[0],
+        title=row[1],
+        category=row[2],
+        overall_score=row[3] or 0,
+        grade=row[4] or "",
+        created_at=row[6] or "",
+        report=json.loads(row[5]),
     )
 
 
@@ -133,7 +125,7 @@ async def delete_history(record_id: str):
     이력 1건을 삭제한다.
     @param record_id - UUID
     """
-    conn = _get_conn()
+    conn = get_runtime_connection()
     try:
         cur = conn.execute("DELETE FROM diagnosis_history WHERE id = ?", (record_id,))
         conn.commit()

@@ -6,18 +6,22 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
-import sqlite3
 import time
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
+from app.db import get_baseline_connection, get_runtime_connection
+
 router = APIRouter()
 logger = logging.getLogger("insta-advisor.admin")
 
-ADMIN_PASSWORD_SHA512 = "2edcf6be5d8b758e185c1e73d86430bf7c438a87aad4649e185845ddca7b19bdc340ea56e8c5d89e3c60d736d49665c8465567075d1715f3d4d186ee33e9dc9e"
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "baseline.db")
+# 운영 환경에서는 ADMIN_PASSWORD_SHA512 환경변수로 덮어쓸 것(기본 해시는 공개 노출됨 → 변경 권장)
+ADMIN_PASSWORD_SHA512 = os.getenv(
+    "ADMIN_PASSWORD_SHA512",
+    "2edcf6be5d8b758e185c1e73d86430bf7c438a87aad4649e185845ddca7b19bdc340ea56e8c5d89e3c60d736d49665c8465567075d1715f3d4d186ee33e9dc9e",
+)
 _start_time = time.time()
 
 
@@ -33,7 +37,8 @@ def _get_stats() -> dict:
     stats = {"timestamp": datetime.utcnow().isoformat(), "uptime_seconds": time.time() - _start_time}
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        # baseline(notes, baseline_stats) — 로컬 읽기 전용
+        conn = get_baseline_connection()
         cur = conn.cursor()
 
         # 노트 통계
@@ -42,52 +47,58 @@ def _get_stats() -> dict:
         cur.execute("SELECT category, COUNT(*) FROM notes GROUP BY category ORDER BY COUNT(*) DESC")
         stats["notes_by_category"] = {r[0]: r[1] for r in cur.fetchall()}
 
-        # 사용 로그
+        # 사용 로그 — runtime DB(Turso 또는 로컬 폴백)
+        rconn = None
         try:
-            cur.execute("SELECT COUNT(*) FROM usage_log")
-            stats["total_requests"] = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(DISTINCT ip) FROM usage_log")
-            stats["unique_ips"] = cur.fetchone()[0]
-            cur.execute("SELECT SUM(total_tokens) FROM usage_log")
-            stats["total_tokens"] = cur.fetchone()[0] or 0
-            cur.execute("SELECT AVG(duration_sec) FROM usage_log WHERE duration_sec > 0")
-            avg = cur.fetchone()[0]
+            rconn = get_runtime_connection()
+            rcur = rconn.cursor()
+            rcur.execute("SELECT COUNT(*) FROM usage_log")
+            stats["total_requests"] = rcur.fetchone()[0]
+            rcur.execute("SELECT COUNT(DISTINCT ip) FROM usage_log")
+            stats["unique_ips"] = rcur.fetchone()[0]
+            rcur.execute("SELECT SUM(total_tokens) FROM usage_log")
+            stats["total_tokens"] = rcur.fetchone()[0] or 0
+            rcur.execute("SELECT AVG(duration_sec) FROM usage_log WHERE duration_sec > 0")
+            avg = rcur.fetchone()[0]
             stats["avg_duration_sec"] = round(avg, 1) if avg else 0
 
             # 오늘 통계
-            cur.execute("SELECT COUNT(*), COUNT(DISTINCT ip) FROM usage_log WHERE date(created_at)=date('now')")
-            row = cur.fetchone()
+            rcur.execute("SELECT COUNT(*), COUNT(DISTINCT ip) FROM usage_log WHERE date(created_at)=date('now')")
+            row = rcur.fetchone()
             stats["today_requests"] = row[0]
             stats["today_ips"] = row[1]
 
             # 카테고리별
-            cur.execute("SELECT category, COUNT(*) FROM usage_log GROUP BY category ORDER BY COUNT(*) DESC")
-            stats["usage_by_category"] = {r[0]: r[1] for r in cur.fetchall()}
+            rcur.execute("SELECT category, COUNT(*) FROM usage_log GROUP BY category ORDER BY COUNT(*) DESC")
+            stats["usage_by_category"] = {r[0]: r[1] for r in rcur.fetchall()}
 
             # 상위 IP
-            cur.execute("SELECT ip, COUNT(*) as c FROM usage_log GROUP BY ip ORDER BY c DESC LIMIT 15")
-            stats["top_ips"] = [{"ip": r[0], "count": r[1]} for r in cur.fetchall()]
+            rcur.execute("SELECT ip, COUNT(*) as c FROM usage_log GROUP BY ip ORDER BY c DESC LIMIT 15")
+            stats["top_ips"] = [{"ip": r[0], "count": r[1]} for r in rcur.fetchall()]
 
             # 최근 20건
-            cur.execute("SELECT ip, action, title, category, total_tokens, duration_sec, status, created_at FROM usage_log ORDER BY created_at DESC LIMIT 20")
+            rcur.execute("SELECT ip, action, title, category, total_tokens, duration_sec, status, created_at FROM usage_log ORDER BY created_at DESC LIMIT 20")
             stats["recent_usage"] = [
                 {"ip": r[0], "action": r[1], "title": (r[2] or "")[:30], "category": r[3], "tokens": r[4], "duration": r[5], "status": r[6], "time": r[7]}
-                for r in cur.fetchall()
+                for r in rcur.fetchall()
             ]
 
             # 시간대별 분포 (최근 24시간)
-            cur.execute("""
+            rcur.execute("""
                 SELECT strftime('%H', created_at) as hour, COUNT(*) as c
                 FROM usage_log WHERE created_at > datetime('now', '-24 hours')
                 GROUP BY hour ORDER BY hour
             """)
-            stats["hourly_24h"] = {r[0]: r[1] for r in cur.fetchall()}
+            stats["hourly_24h"] = {r[0]: r[1] for r in rcur.fetchall()}
         except Exception:
             stats["total_requests"] = 0
             stats["unique_ips"] = 0
             stats["recent_usage"] = []
+        finally:
+            if rconn:
+                rconn.close()
 
-        # 인게이지먼트 통계
+        # 인게이지먼트 통계 — baseline
         cur.execute("""
             SELECT category, metric_name, metric_value FROM baseline_stats
             WHERE metric_name IN ('avg_likes','avg_collects','avg_comments','viral_rate')

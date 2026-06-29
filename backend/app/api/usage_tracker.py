@@ -4,14 +4,12 @@
 from __future__ import annotations
 
 import logging
-import os
-import sqlite3
-from typing import Optional
 
 from fastapi import Request
 
+from app.db import get_runtime_connection
+
 logger = logging.getLogger("insta-advisor.usage")
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "baseline.db")
 
 
 def get_client_ip(request: Request) -> str:
@@ -36,7 +34,7 @@ def log_usage(
 ) -> None:
     """Write a usage log entry to SQLite."""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_runtime_connection()
         conn.execute(
             "INSERT INTO usage_log (ip, action, title, category, total_tokens, duration_sec, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (ip, action, title[:100], category, total_tokens, round(duration_sec, 1), status),

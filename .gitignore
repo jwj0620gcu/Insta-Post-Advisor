@@ -34,8 +34,9 @@ Thumbs.db
 # Data
 backend/data/*.db
 *.sqlite3
-# OpenClaw 式本地记忆目录（含 Markdown 流水与 JSON 副本，默认不提交）
+# 로컬 메모리 워크스페이스(Markdown 流水 + JSON 副本) — 커밋 제외
 backend/data/noterx_workspace/
+backend/data/insta-advisor_workspace/
 
 # Logs
 *.log

@@ -3,7 +3,6 @@ Insta-Advisor 백엔드 엔트리포인트
 """
 import logging
 import os
-import sqlite3
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -16,13 +15,15 @@ from app import local_memory
 
 FRONTEND_DIST = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "baseline.db")
-
 
 def _ensure_history_table():
-    """앱 시작 시 diagnosis_history 테이블이 없으면 생성한다."""
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    """앱 시작 시 runtime 테이블(diagnosis_history, usage_log)이 없으면 생성한다.
+
+    runtime DB는 Turso(설정 시) 또는 로컬 baseline.db(폴백)다.
+    """
+    from app.db import get_runtime_connection
+
+    conn = get_runtime_connection()
     conn.execute("""
         CREATE TABLE IF NOT EXISTS diagnosis_history (
             id TEXT PRIMARY KEY,
@@ -174,11 +175,11 @@ if os.path.isdir(FRONTEND_DIST):
 @app.get("/api/health")
 async def health():
     """상세 헬스체크(데이터베이스 연결 확인 포함)."""
-    db_path = os.path.join(os.path.dirname(__file__), "..", "data", "baseline.db")
+    from app.db import get_baseline_connection
     db_ok = False
     note_count = 0
     try:
-        conn = sqlite3.connect(db_path)
+        conn = get_baseline_connection()
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM notes")
         note_count = cur.fetchone()[0]
