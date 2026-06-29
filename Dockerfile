@@ -25,8 +25,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # 파이썬 의존성 (레이어 캐시를 위해 먼저 복사)
-COPY backend/requirements.txt backend/requirements.txt
-RUN pip install --no-cache-dir -r backend/requirements.txt
+# Docker 이미지는 Python 3.11 → libsql-experimental 사전 wheel이 있어 Turso 영속화까지 설치한다.
+COPY backend/requirements.txt backend/requirements-turso.txt backend/
+RUN pip install --no-cache-dir -r backend/requirements.txt -r backend/requirements-turso.txt
 
 # 애플리케이션 소스
 COPY backend/ backend/

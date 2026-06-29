@@ -29,22 +29,40 @@ def _turso_config() -> tuple[str | None, str | None]:
     return (url, token) if url else (None, None)
 
 
+def _libsql_available() -> bool:
+    """libsql-experimental 패키지 설치 여부(선택적 의존성)."""
+    import importlib.util
+
+    return importlib.util.find_spec("libsql_experimental") is not None
+
+
 def runtime_is_turso() -> bool:
-    """런타임 데이터가 Turso에 저장되는지 여부."""
-    return _turso_config()[0] is not None
+    """런타임 데이터가 실제로 Turso에 저장되는지 여부.
+
+    Turso 설정이 있어도 libsql-experimental이 설치돼 있지 않으면 로컬로 폴백하므로 False.
+    """
+    return _turso_config()[0] is not None and _libsql_available()
 
 
 def get_runtime_connection():
     """
     runtime(diagnosis_history/usage_log)용 연결.
-    Turso 설정 시 libSQL 원격 연결, 아니면 로컬 baseline.db로 폴백한다.
+    Turso 설정 + libSQL 설치 시 libSQL 원격 연결, 아니면 로컬 baseline.db로 폴백한다.
     libSQL 연결도 sqlite3와 동일한 execute/commit/cursor 인터페이스를 제공한다.
     """
     url, token = _turso_config()
     if url:
-        import libsql_experimental as libsql
-
-        return libsql.connect(database=url, auth_token=token)
+        try:
+            import libsql_experimental as libsql
+        except ImportError:
+            # libsql-experimental은 Docker 이미지(Python 3.11)에서만 설치된다.
+            # 미설치 환경에서는 영속화를 포기하고 로컬 파일로 폴백한다(앱은 정상 부팅).
+            print(
+                "[db] TURSO_DATABASE_URL이 설정됐지만 libsql-experimental이 없어 "
+                "로컬 SQLite로 폴백합니다. Turso 영속화를 쓰려면 Docker 런타임으로 배포하세요."
+            )
+        else:
+            return libsql.connect(database=url, auth_token=token)
     os.makedirs(DATA_DIR, exist_ok=True)
     return sqlite3.connect(BASELINE_DB_PATH)
 

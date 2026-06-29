@@ -1,0 +1,4 @@
+# Turso(libSQL) 영속화용 선택적 의존성.
+# Rust(maturin)로 빌드되며 사전 wheel이 있는 인터프리터(Docker 이미지의 Python 3.11)에서만 설치한다.
+# 미설치 시 app/db.py가 로컬 SQLite로 자동 폴백한다.
+libsql-experimental>=0.0.49

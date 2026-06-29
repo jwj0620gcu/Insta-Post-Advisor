@@ -10,4 +10,8 @@ Pillow>=11.1.0
 aiofiles>=24.1.0
 httpx>=0.28.0
 slowapi>=0.1.9
-libsql-experimental>=0.0.49
+# libsql-experimental(Rust/maturin)은 빌드 필수가 아니므로 requirements-turso.txt로 분리한다.
+#   - 런타임에 TURSO_DATABASE_URL이 설정됐을 때만 lazy import (app/db.py)
+#   - 미설치 시 로컬 SQLite로 자동 폴백
+#   - 사전 wheel이 없는 인터프리터(예: Python 3.14)에서 Rust 소스 컴파일이 실패하는 것을 방지
+# Turso 영속화가 필요한 환경(Docker 이미지)에서는 requirements-turso.txt를 추가 설치한다.
