@@ -1,17 +1,13 @@
 services:
   - type: web
     name: insta-advisor
-    runtime: python
+    runtime: docker
     region: singapore
     plan: free
-    buildCommand: >-
-      pip install -r backend/requirements.txt &&
-      cd frontend && npm install && npm run build && cd .. &&
-      python scripts/init_db.py &&
-      python scripts/seed_data.py &&
-      python scripts/compute_baseline.py
-    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
     envVars:
+      # === LLM (Gemini OpenAI 호환) ===
       - key: LLM_PROVIDER
         value: gemini
       - key: GEMINI_API_KEY
@@ -30,7 +26,16 @@ services:
         value: "3"
       - key: PLATFORM
         value: instagram
-      - key: VIDEO_STT_ENABLED
-        value: "0"
       - key: ALLOWED_ORIGINS
         value: "*"
+      # === 영상 STT (Groq whisper-large-v3-turbo) — ffmpeg는 Docker 이미지에 포함 ===
+      - key: VIDEO_STT_ENABLED
+        value: "1"
+      - key: OPENAI_WHISPER_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: OPENAI_WHISPER_API_KEY
+        sync: false
+      - key: WHISPER_MODEL
+        value: whisper-large-v3-turbo
+      - key: VIDEO_STT_LANGUAGE
+        value: ko

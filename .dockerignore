@@ -1,0 +1,33 @@
+# 의존성 / 빌드 산출물 (이미지 안에서 새로 설치·빌드)
+node_modules/
+frontend/node_modules/
+frontend/dist/
+backend/venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# 환경/비밀: 키는 플랫폼 환경변수로 주입 (이미지에 절대 굽지 않음)
+.env
+.env.local
+backend/.env
+
+# 로컬 데이터 (DB는 빌드 시 시드로 재생성)
+backend/data/*.db
+*.sqlite3
+backend/data/temp_videos/
+backend/data/noterx_workspace/
+
+# 개발/메타
+.git/
+.github/
+.vscode/
+.idea/
+.pytest_cache/
+*.log
+.DS_Store
+test/
