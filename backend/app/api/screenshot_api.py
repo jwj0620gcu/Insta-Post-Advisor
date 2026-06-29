@@ -19,6 +19,7 @@ from PIL import Image
 from app.agents.base_agent import _get_client, _is_mimo_openai_compat, _llm_provider, _parse_json_from_llm_text
 from app.analysis.mimo_video import build_mimo_video_url_content_part
 from app.analysis.video_stt import transcribe_video_with_whisper
+from app.rate_limit import limiter, DIAGNOSE_LIMIT
 from app.api.diagnose import (
     MAX_VIDEO_SIZE,
     MIME_TO_EXT,
@@ -858,6 +859,7 @@ async def quick_recognize(
 
 
 @router.post("/screenshot/quick-recognize-video")
+@limiter.limit(DIAGNOSE_LIMIT)
 async def quick_recognize_video(request: Request, file: UploadFile = File(...)):
     """
     영상 업로드 후 AI 빠른 인식을 수행한다. 반환 필드는 /screenshot/quick-recognize 와 동일하다.

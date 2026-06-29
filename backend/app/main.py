@@ -77,6 +77,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# IP 기반 rate limit (비용 큰 LLM/STT 엔드포인트 남용 방지)
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.rate_limit import limiter
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 _cors_origins_env = os.getenv("ALLOWED_ORIGINS", "")
 _cors_origins: list[str] = (
     [o.strip() for o in _cors_origins_env.split(",") if o.strip()]

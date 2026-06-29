@@ -27,7 +27,7 @@ services:
       - key: PLATFORM
         value: instagram
       - key: ALLOWED_ORIGINS
-        value: "*"
+        value: "https://insta-post-advisor.onrender.com"
       # === 영상 STT (Groq whisper-large-v3-turbo) — ffmpeg는 Docker 이미지에 포함 ===
       - key: VIDEO_STT_ENABLED
         value: "1"

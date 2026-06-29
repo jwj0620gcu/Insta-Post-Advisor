@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse
 
 from app.agents.base_agent import _llm_provider
 from app.models.schemas import DiagnoseResponse
+from app.rate_limit import limiter, DIAGNOSE_LIMIT
 
 router = APIRouter()
 logger = logging.getLogger("insta-advisor.diagnose")
@@ -342,6 +343,7 @@ async def get_temp_video(
 # ─── Main diagnose endpoint ───
 
 @router.post("/diagnose", response_model=DiagnoseResponse)
+@limiter.limit(DIAGNOSE_LIMIT)
 async def diagnose_note(
     request: Request,
     title: str = Form(""),
@@ -502,6 +504,7 @@ async def pre_score_note(
 
 
 @router.post("/diagnose-stream")
+@limiter.limit(DIAGNOSE_LIMIT)
 async def diagnose_stream(
     request: Request,
     title: str = Form(""),
