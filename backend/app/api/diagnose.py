@@ -56,13 +56,9 @@ TEMP_VIDEO_DIR = Path(
 )
 
 
-def _extract_first_video_frame(
-    video_bytes: bytes,
-    container_suffix: str = ".mp4",
-) -> Optional[bytes]:
+def _extract_first_video_frame_from_path(video_path: str) -> Optional[bytes]:
     """
-    비디오 바이트에서 첫 프레임을 JPEG로 추출한다.
-    @param container_suffix - 임시 파일 확장자(실제 컨테이너와 일치해야 OpenCV 실패를 줄일 수 있음)
+    디스크의 영상 파일에서 첫 프레임을 JPEG로 추출한다(영상 바이트를 RAM에 올리지 않음).
     """
     try:
         import cv2
@@ -70,14 +66,8 @@ def _extract_first_video_frame(
         logger.warning("OpenCV unavailable; skip extracting video frame")
         return None
 
-    suffix = container_suffix if container_suffix.startswith(".") else f".{container_suffix}"
-    temp_path = ""
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            temp_file.write(video_bytes)
-            temp_path = temp_file.name
-
-        capture = cv2.VideoCapture(temp_path)
+        capture = cv2.VideoCapture(video_path)
         if not capture.isOpened():
             capture.release()
             return None
@@ -96,6 +86,27 @@ def _extract_first_video_frame(
         if not encode_ok:
             return None
         return encoded.tobytes()
+    except Exception as exc:
+        logger.warning("Extract video frame failed: %s", exc)
+        return None
+
+
+def _extract_first_video_frame(
+    video_bytes: bytes,
+    container_suffix: str = ".mp4",
+) -> Optional[bytes]:
+    """
+    바이트 입력 호환 래퍼: 임시 파일로 저장 후 경로 기반 추출에 위임한다.
+    가능하면 _extract_first_video_frame_from_path(디스크 경로)를 직접 사용해 메모리를 아낀다.
+    @param container_suffix - 임시 파일 확장자(실제 컨테이너와 일치해야 OpenCV 실패를 줄일 수 있음)
+    """
+    suffix = container_suffix if container_suffix.startswith(".") else f".{container_suffix}"
+    temp_path = ""
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+            temp_file.write(video_bytes)
+            temp_path = temp_file.name
+        return _extract_first_video_frame_from_path(temp_path)
     except Exception as exc:
         logger.warning("Extract video frame failed: %s", exc)
         return None
@@ -125,6 +136,115 @@ async def _read_and_validate_video(file: UploadFile) -> bytes:
     if len(video_bytes) > MAX_VIDEO_SIZE:
         raise HTTPException(400, f"video_file이 {MAX_VIDEO_SIZE // (1024 * 1024)}MB 제한을 초과했습니다")
     return video_bytes
+
+
+async def spool_upload_to_temp(
+    file: UploadFile,
+    *,
+    max_bytes: int,
+    suffix: str = ".mp4",
+    chunk_size: int = 1024 * 1024,
+) -> str:
+    """
+    업로드를 청크 단위로 디스크 임시 파일에 스트리밍 저장하고 그 경로를 반환한다.
+    전체 바이트를 RAM에 올리지 않아 메모리 사용이 영상 크기와 무관하다.
+    누적 크기가 max_bytes를 넘으면 즉시 파일을 지우고 400을 던진다(과대 업로드 조기 차단).
+    호출자는 반환된 경로를 사용 후 반드시 삭제해야 한다.
+    """
+    suffix = suffix if suffix.startswith(".") else f".{suffix}"
+    total = 0
+    temp_path = ""
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tf:
+            temp_path = tf.name
+            while True:
+                chunk = await file.read(chunk_size)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > max_bytes:
+                    raise HTTPException(
+                        400, f"영상은 {max_bytes // (1024 * 1024)}MB를 초과할 수 없습니다"
+                    )
+                tf.write(chunk)
+        return temp_path
+    except Exception:
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
+        raise
+
+
+async def understand_video_upload(
+    request: Request,
+    video_file: UploadFile,
+    *,
+    title: str,
+    category: str,
+    has_cover_image: bool,
+) -> tuple[Optional[dict], Optional[bytes]]:
+    """
+    업로드 영상을 디스크로 스트리밍 저장해(메모리 절감) 영상 이해와 첫 프레임을 얻는다.
+    영상 바이트를 RAM에 통째로 올리지 않고 경로 기반으로 처리하며, 임시 파일은 항상 정리한다.
+    @param has_cover_image - 커버 이미지가 이미 있으면 프레임 추출을 건너뛴다.
+    @returns (video_analysis, frame_jpeg). 각각 없으면 None.
+    """
+    if video_file.content_type and video_file.content_type not in ALLOWED_VIDEO_MIME:
+        raise HTTPException(400, f"지원하지 않는 비디오 형식: {video_file.content_type}")
+
+    mime_for_video = video_file.content_type or "video/mp4"
+    ext = MIME_TO_EXT.get(mime_for_video, ".mp4")
+    video_path = await spool_upload_to_temp(video_file, max_bytes=MAX_VIDEO_SIZE, suffix=ext)
+    try:
+        frame_jpeg: Optional[bytes] = None
+        if not has_cover_image:
+            frame_jpeg = _extract_first_video_frame_from_path(video_path)
+            if frame_jpeg is not None:
+                logger.info("Using first frame from video for visual analysis")
+
+        video_analysis: Optional[dict] = None
+        provider = _llm_provider()
+        url_diag = get_public_base_url_diagnostics(request)
+        hint = f"title={title[:80]} | category={category}"
+        if provider == "gemini":
+            try:
+                from app.analysis.video_analyzer import VideoAnalyzer
+
+                video_analysis = await VideoAnalyzer().analyze_from_path(
+                    video_path, mime_type=mime_for_video, prompt_hint=hint
+                )
+                logger.info("Gemini video understanding completed (%s)", mime_for_video)
+            except Exception as e:
+                logger.warning("Gemini video understanding failed: %s", e)
+        elif mime_for_video in MIMO_VIDEO_MIME and bool(url_diag.get("ok")):
+            try:
+                from app.analysis.video_analyzer import VideoAnalyzer
+
+                with open(video_path, "rb") as f:
+                    video_bytes = f.read()
+                video_url = _store_temp_video_and_build_url(request, video_bytes, mime_for_video)
+                video_analysis = await VideoAnalyzer().analyze(video_url, prompt_hint=hint)
+            except Exception as e:
+                logger.warning("Video understanding failed: %s", e)
+        elif mime_for_video in MIMO_VIDEO_MIME:
+            logger.info(
+                "Skip MiMo video_url: %s (source=%s, base=%s); "
+                "set MIMO_VIDEO_PUBLIC_BASE_URL or X-Forwarded-* for full video understanding",
+                url_diag.get("reason"),
+                url_diag.get("source"),
+                url_diag.get("base_url"),
+            )
+        else:
+            logger.info("Video mime %s outside MiMo supported types; skip video understanding", mime_for_video)
+        return video_analysis, frame_jpeg
+    finally:
+        if video_path and os.path.exists(video_path):
+            try:
+                os.remove(video_path)
+            except OSError:
+                logger.warning("영상 임시 파일 삭제 실패: %s", video_path)
 
 
 # ─── Temp video URL serving (for MiMo video_url mode) ───
@@ -371,68 +491,23 @@ async def diagnose_note(
     for index, image in enumerate(image_files):
         parsed_images.append(await _read_and_validate_image(image, f"cover_images[{index}]"))
 
-    video_bytes: Optional[bytes] = None
-    if video_file is not None:
-        video_bytes = await _read_and_validate_video(video_file)
-
     image_bytes = parsed_images[0] if parsed_images else None
     if len(parsed_images) > 1:
         logger.info("Received %d images; carousel analysis will be applied", len(parsed_images))
 
-    # 영상 분석
+    # 영상 분석 (디스크 스트리밍 기반: 영상 바이트를 RAM에 통째로 올리지 않음)
     video_analysis: Optional[dict] = None
-
-    if video_bytes is not None:
-        mime_for_video = (video_file.content_type if video_file else None) or "video/mp4"
-        ext = MIME_TO_EXT.get(mime_for_video, ".mp4")
-        url_diag = get_public_base_url_diagnostics(request)
+    if video_file is not None:
+        video_analysis, frame_jpeg = await understand_video_upload(
+            request,
+            video_file,
+            title=title,
+            category=category,
+            has_cover_image=image_bytes is not None,
+        )
         # 커버 이미지가 없을 때만 비디오 첫 프레임을 시각 입력 폴백으로 사용
-        if image_bytes is None:
-            extracted = _extract_first_video_frame(video_bytes, ext)
-            if extracted is not None:
-                image_bytes = extracted
-                logger.info("Using first frame from video for visual analysis")
-            else:
-                logger.info("Video frame extraction failed, visual baseline may fallback")
-
-        provider = _llm_provider()
-        # 비디오가 업로드되면 커버/본문 이미지 동시 업로드 여부와 무관하게 비디오 이해를 시도
-        if provider == "gemini":
-            try:
-                from app.analysis.video_analyzer import VideoAnalyzer
-
-                analyzer = VideoAnalyzer()
-                video_analysis = await analyzer.analyze_bytes(
-                    video_bytes,
-                    mime_type=mime_for_video,
-                    prompt_hint=f"title={title[:80]} | category={category}",
-                )
-                logger.info("Gemini video understanding completed (%s)", mime_for_video)
-            except Exception as e:
-                logger.warning("Gemini video understanding failed, fallback to frame/text inference: %s", e)
-        elif mime_for_video in MIMO_VIDEO_MIME and bool(url_diag.get("ok")):
-            logger.info("Trying MiMo video understanding via signed temp URL (%s)", mime_for_video)
-            try:
-                from app.analysis.video_analyzer import VideoAnalyzer
-
-                video_url = _store_temp_video_and_build_url(request, video_bytes, mime_for_video)
-                analyzer = VideoAnalyzer()
-                video_analysis = await analyzer.analyze(
-                    video_url,
-                    prompt_hint=f"title={title[:80]} | category={category}",
-                )
-            except Exception as e:
-                logger.warning("Video understanding failed, fallback to title/content inference: %s", e)
-        elif mime_for_video in MIMO_VIDEO_MIME:
-            logger.info(
-                "Skip MiMo video_url: %s (source=%s, base=%s); "
-                "set MIMO_VIDEO_PUBLIC_BASE_URL or X-Forwarded-* for full video understanding",
-                url_diag.get("reason"),
-                url_diag.get("source"),
-                url_diag.get("base_url"),
-            )
-        else:
-            logger.info("Video mime %s outside MiMo supported types; skip video understanding", mime_for_video)
+        if image_bytes is None and frame_jpeg is not None:
+            image_bytes = frame_jpeg
 
     tag_list = [token.strip() for token in tags.split(",") if token.strip()] if tags else []
 
@@ -535,51 +610,20 @@ async def diagnose_stream(
     for index, image in enumerate(image_files):
         parsed_images.append(await _read_and_validate_image(image, f"cover_images[{index}]"))
 
-    video_bytes: Optional[bytes] = None
-    if video_file is not None:
-        video_bytes = await _read_and_validate_video(video_file)
-
     image_bytes = parsed_images[0] if parsed_images else None
 
+    # 영상 분석 (디스크 스트리밍 기반: 영상 바이트를 RAM에 통째로 올리지 않음)
     video_analysis: Optional[dict] = None
-    if video_bytes is not None:
-        mime_for_video = (video_file.content_type if video_file else None) or "video/mp4"
-        ext = MIME_TO_EXT.get(mime_for_video, ".mp4")
-        url_diag = get_public_base_url_diagnostics(request)
-        if image_bytes is None:
-            extracted = _extract_first_video_frame(video_bytes, ext)
-            if extracted is not None:
-                image_bytes = extracted
-
-        provider = _llm_provider()
-        if provider == "gemini":
-            try:
-                from app.analysis.video_analyzer import VideoAnalyzer
-
-                analyzer = VideoAnalyzer()
-                video_analysis = await analyzer.analyze_bytes(
-                    video_bytes,
-                    mime_type=mime_for_video,
-                    prompt_hint=f"title={title[:80]} | category={category}",
-                )
-                logger.info("Gemini video understanding(stream) completed (%s)", mime_for_video)
-            except Exception as e:
-                logger.warning("Gemini video understanding(stream) failed: %s", e)
-        elif mime_for_video in MIMO_VIDEO_MIME and bool(url_diag.get("ok")):
-            try:
-                from app.analysis.video_analyzer import VideoAnalyzer
-                video_url = _store_temp_video_and_build_url(request, video_bytes, mime_for_video)
-                analyzer = VideoAnalyzer()
-                video_analysis = await analyzer.analyze(video_url, prompt_hint=f"title={title[:80]} | category={category}")
-            except Exception as e:
-                logger.warning("Video understanding failed: %s", e)
-        elif mime_for_video in MIMO_VIDEO_MIME:
-            logger.info(
-                "Skip MiMo video_url(stream): %s (source=%s, base=%s)",
-                url_diag.get("reason"),
-                url_diag.get("source"),
-                url_diag.get("base_url"),
-            )
+    if video_file is not None:
+        video_analysis, frame_jpeg = await understand_video_upload(
+            request,
+            video_file,
+            title=title,
+            category=category,
+            has_cover_image=image_bytes is not None,
+        )
+        if image_bytes is None and frame_jpeg is not None:
+            image_bytes = frame_jpeg
 
     tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
 

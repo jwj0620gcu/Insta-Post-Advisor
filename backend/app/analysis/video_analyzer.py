@@ -84,6 +84,70 @@ class VideoAnalyzer:
             raise RuntimeError("Gemini Files API 업로드 응답에서 file.uri를 찾지 못했습니다")
         return file_uri, file_name
 
+    async def _gemini_upload_video_from_path(
+        self, client: httpx.AsyncClient, video_path: str, mime_type: str
+    ) -> tuple[str, Optional[str]]:
+        """
+        Gemini Files API로 디스크의 영상 파일을 스트리밍 업로드한다(바이트를 RAM에 올리지 않음).
+        """
+        api_key = self._gemini_key()
+        if not api_key:
+            raise RuntimeError("GEMINI_API_KEY가 설정되어 있지 않습니다")
+
+        size = os.path.getsize(video_path)
+        start_url = f"https://generativelanguage.googleapis.com/upload/v1beta/files?key={api_key}"
+        start_headers = {
+            "X-Goog-Upload-Protocol": "resumable",
+            "X-Goog-Upload-Command": "start",
+            "X-Goog-Upload-Header-Content-Length": str(size),
+            "X-Goog-Upload-Header-Content-Type": mime_type,
+            "Content-Type": "application/json",
+        }
+        start_body = {"file": {"display_name": "insta-advisor_video_input"}}
+        start_resp = await client.post(start_url, headers=start_headers, json=start_body)
+        if start_resp.status_code >= 400:
+            try:
+                payload = start_resp.json() if start_resp.text else {}
+            except Exception:
+                payload = {"raw": (start_resp.text or "")[:500]}
+            msg = self._extract_error_message_from_payload(payload)
+            raise RuntimeError(msg or f"Gemini upload start 실패 ({start_resp.status_code})")
+        upload_url = start_resp.headers.get("x-goog-upload-url") or start_resp.headers.get("X-Goog-Upload-URL")
+        if not upload_url:
+            raise RuntimeError("Gemini Files API resumable upload URL을 받지 못했습니다")
+
+        async def _stream():
+            import aiofiles
+
+            async with aiofiles.open(video_path, "rb") as f:
+                while True:
+                    chunk = await f.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    yield chunk
+
+        upload_headers = {
+            "X-Goog-Upload-Offset": "0",
+            "X-Goog-Upload-Command": "upload, finalize",
+            "Content-Type": mime_type,
+            "Content-Length": str(size),
+        }
+        upload_resp = await client.post(upload_url, headers=upload_headers, content=_stream())
+        if upload_resp.status_code >= 400:
+            try:
+                payload = upload_resp.json() if upload_resp.text else {}
+            except Exception:
+                payload = {"raw": (upload_resp.text or "")[:500]}
+            msg = self._extract_error_message_from_payload(payload)
+            raise RuntimeError(msg or f"Gemini upload finalize 실패 ({upload_resp.status_code})")
+        payload = upload_resp.json() if upload_resp.text else {}
+        file_info = payload.get("file", {}) if isinstance(payload, dict) else {}
+        file_uri = str(file_info.get("uri", "")).strip()
+        file_name = str(file_info.get("name", "")).strip() or None
+        if not file_uri:
+            raise RuntimeError("Gemini Files API 업로드 응답에서 file.uri를 찾지 못했습니다")
+        return file_uri, file_name
+
     async def _gemini_wait_file_active(self, client: httpx.AsyncClient, file_name: Optional[str]) -> None:
         """
         Gemini 비디오 파일 처리 상태를 ACTIVE까지 대기한다.
@@ -230,6 +294,57 @@ class VideoAnalyzer:
             finally:
                 await self._gemini_delete_file(client, file_name)
 
+    async def infer_json_from_video_path(
+        self,
+        video_path: str,
+        *,
+        mime_type: str,
+        prompt_text: str,
+        system_prompt: Optional[str] = None,
+        model_override: Optional[str] = None,
+        max_output_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+    ) -> dict:
+        """
+        infer_json_from_video_bytes의 디스크 경로 버전(메모리 절감).
+        영상 바이트를 RAM에 올리지 않고 Files API로 스트리밍 업로드한다.
+        """
+        if not self._is_gemini_provider():
+            raise RuntimeError("Gemini provider가 아니므로 infer_json_from_video_path를 사용할 수 없습니다")
+
+        model = model_override or os.getenv("LLM_MODEL_OMNI", "gemini-2.5-flash-lite")
+        max_out = max_output_tokens or int(os.getenv("LLM_MAX_COMPLETION_TOKENS", "2048"))
+        temp = float(os.getenv("LLM_TEMPERATURE", "0.2")) if temperature is None else float(temperature)
+
+        timeout_sec = float(os.getenv("GEMINI_VIDEO_ANALYZE_TIMEOUT_SEC", "180"))
+        http_timeout = httpx.Timeout(timeout_sec, connect=30.0)
+        async with httpx.AsyncClient(timeout=http_timeout) as client:
+            file_name: Optional[str] = None
+            try:
+                file_uri, file_name = await self._gemini_upload_video_from_path(
+                    client, video_path, mime_type
+                )
+                await self._gemini_wait_file_active(client, file_name)
+                raw = await self._gemini_generate_text_from_file(
+                    client,
+                    file_uri=file_uri,
+                    mime_type=mime_type,
+                    prompt_text=prompt_text,
+                    system_prompt=system_prompt,
+                    model=model,
+                    max_output_tokens=max_out,
+                    temperature=temp,
+                )
+                try:
+                    parsed = json.loads(raw)
+                except json.JSONDecodeError:
+                    parsed = _parse_json_from_llm_text(raw)
+                if not isinstance(parsed, dict):
+                    raise RuntimeError("Gemini 비디오 분석 결과가 JSON object가 아닙니다")
+                return parsed
+            finally:
+                await self._gemini_delete_file(client, file_name)
+
     async def analyze(
         self,
         video_data_url: str,
@@ -355,6 +470,47 @@ class VideoAnalyzer:
         parsed.setdefault("shot_style", "")
         parsed.setdefault("risk_or_limitations", [])
         return parsed
+
+    async def analyze_from_path(
+        self,
+        video_path: str,
+        *,
+        mime_type: str,
+        prompt_hint: str = "",
+    ) -> dict:
+        """
+        analyze_bytes의 디스크 경로 버전(메모리 절감). 영상 바이트를 RAM에 올리지 않는다.
+        """
+        if not self._is_gemini_provider():
+            raise RuntimeError("analyze_from_path는 Gemini provider 전용입니다")
+        user_prompt = (
+            "Analyze the uploaded Instagram video and return JSON with fields: "
+            "summary (string), "
+            "scene_keywords (array of <=8 strings), "
+            "cover_suggestion (string), "
+            "has_face (boolean), "
+            "shot_style (string), "
+            "risk_or_limitations (array of strings). "
+            "If confidence is low, still return best-effort values."
+        )
+        if prompt_hint.strip():
+            user_prompt += f" Additional context: {prompt_hint.strip()}"
+        system_prompt = "Return ONLY valid JSON without markdown fences."
+        parsed = await self.infer_json_from_video_path(
+            video_path,
+            mime_type=mime_type,
+            prompt_text=user_prompt,
+            system_prompt=system_prompt,
+            temperature=0.2,
+        )
+        parsed.setdefault("summary", "")
+        parsed.setdefault("scene_keywords", [])
+        parsed.setdefault("cover_suggestion", "")
+        parsed.setdefault("has_face", False)
+        parsed.setdefault("shot_style", "")
+        parsed.setdefault("risk_or_limitations", [])
+        return parsed
+
     @staticmethod
     def _extract_error_message_from_payload(payload: object) -> str:
         if isinstance(payload, dict):

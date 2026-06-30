@@ -153,25 +153,19 @@ def _extract_wav_segment(video_path: str, *, start_sec: float, clip_sec: float) 
                 pass
 
 
-def _extract_wav_chunks_from_video_bytes(video_bytes: bytes, container_suffix: str) -> list[bytes]:
+def _extract_wav_chunks_from_video_path(video_path: str) -> list[bytes]:
     """
-    ffmpeg로 영상 오디오를 여러 16kHz mono WAV 구간으로 분할한다.
-    단일 파일 과대 업로드 거부를 피하기 위해 구간 단위 전사를 사용한다.
+    ffmpeg로 디스크의 영상 파일 오디오를 여러 16kHz mono WAV 구간으로 분할한다.
+    영상 바이트를 RAM에 들지 않으므로 메모리 사용이 영상 크기와 무관하다.
     @returns WAV 구간 목록. 실패 시 빈 리스트(예: ffmpeg 없음, 오디오 없음)
     """
-    suffix = container_suffix if container_suffix.startswith(".") else f".{container_suffix}"
     max_total_sec = int(os.getenv("VIDEO_STT_MAX_AUDIO_SECONDS", "3600"))
     max_total_sec = max(60, min(max_total_sec, 14400))
     seg_sec = int(os.getenv("VIDEO_STT_SEGMENT_SECONDS", "480"))
     seg_sec = max(30, min(seg_sec, 1200))
 
-    video_path = ""
     chunks: list[bytes] = []
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as vf:
-            vf.write(video_bytes)
-            video_path = vf.name
-
         duration = _probe_video_duration_seconds(video_path)
         if duration is None:
             # 길이 탐지 실패 시 상한값 기준으로 1회 이상 시도
@@ -204,6 +198,20 @@ def _extract_wav_chunks_from_video_bytes(video_bytes: bytes, container_suffix: s
     except Exception as e:
         logger.warning("VIDEO_STT: 오디오 트랙 추출 예외 %s", e)
         return []
+
+
+def _extract_wav_chunks_from_video_bytes(video_bytes: bytes, container_suffix: str) -> list[bytes]:
+    """
+    바이트 입력 호환 래퍼: 임시 파일로 저장 후 경로 기반 추출에 위임한다.
+    가능하면 _extract_wav_chunks_from_video_path(디스크 경로)를 직접 사용해 메모리를 아낀다.
+    """
+    suffix = container_suffix if container_suffix.startswith(".") else f".{container_suffix}"
+    video_path = ""
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as vf:
+            vf.write(video_bytes)
+            video_path = vf.name
+        return _extract_wav_chunks_from_video_path(video_path)
     finally:
         if video_path and os.path.exists(video_path):
             try:
@@ -279,21 +287,36 @@ async def _transcribe_single_wav(
     return _transcription_text_from_response(resp)
 
 
-async def transcribe_video_with_whisper(video_bytes: bytes, container_suffix: str) -> str:
+async def transcribe_video_from_path(video_path: str) -> str:
     """
-    비동기 파이프라인: 스레드풀 WAV 추출 + AsyncOpenAI Whisper 전사.
+    디스크 경로 기반 전사(메모리 절감). 영상 바이트를 RAM에 올리지 않는다.
     @returns 전사 텍스트. 실패/비활성화 시 빈 문자열
     """
     if not _stt_enabled():
         return ""
+    chunks = await asyncio.to_thread(_extract_wav_chunks_from_video_path, video_path)
+    return await _transcribe_wav_chunks(chunks)
 
+
+async def transcribe_video_with_whisper(video_bytes: bytes, container_suffix: str) -> str:
+    """
+    바이트 입력 호환 래퍼. 가능하면 transcribe_video_from_path를 직접 사용하라.
+    @returns 전사 텍스트. 실패/비활성화 시 빈 문자열
+    """
+    if not _stt_enabled():
+        return ""
+    chunks = await asyncio.to_thread(_extract_wav_chunks_from_video_bytes, video_bytes, container_suffix)
+    return await _transcribe_wav_chunks(chunks)
+
+
+async def _transcribe_wav_chunks(chunks: list[bytes]) -> str:
+    """추출된 WAV 구간들을 Whisper로 전사해 병합한다."""
     key, base = _resolve_whisper_client_config()
     if not key or not base:
         return ""
 
     model = (os.getenv("WHISPER_MODEL") or "whisper-1").strip()
 
-    chunks = await asyncio.to_thread(_extract_wav_chunks_from_video_bytes, video_bytes, container_suffix)
     if not chunks:
         logger.warning(
             "VIDEO_STT: WAV 구간이 비어 전사 API를 호출하지 않았습니다(ffmpeg/오디오 트랙/stderr 로그 확인).",

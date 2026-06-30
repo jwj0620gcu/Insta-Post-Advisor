@@ -28,11 +28,10 @@ const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 const ALL_ACCEPT = [...IMAGE_TYPES, ...VIDEO_TYPES].join(",");
 const MAX_IMAGE = 10 * 1024 * 1024;
 /**
- * 백엔드 MAX_VIDEO_UPLOAD_MB와 정렬. 무료 인스턴스(512MB RAM)에서 큰 영상은
- * OOM→502를 유발하므로 60MB로 제한해 업로드 전에 클라이언트가 친절히 거부한다.
- * 변경 시 render.yaml(MAX_VIDEO_UPLOAD_MB)도 함께 수정.
+ * 백엔드 MAX_VIDEO_UPLOAD_MB와 정렬. 영상 처리가 디스크 스트리밍 기반이라
+ * 큰 영상도 메모리 안전해서 200MB까지 허용한다. 변경 시 render.yaml도 함께 수정.
  */
-const VIDEO_MAX_MB = 60;
+const VIDEO_MAX_MB = 200;
 const MAX_VIDEO = VIDEO_MAX_MB * 1024 * 1024;
 
 /**

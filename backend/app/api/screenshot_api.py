@@ -25,15 +25,17 @@ from app.agents.base_agent import (
     _parse_json_from_llm_text,
 )
 from app.analysis.mimo_video import build_mimo_video_url_content_part
-from app.analysis.video_stt import transcribe_video_with_whisper
+from app.analysis.video_stt import transcribe_video_with_whisper, transcribe_video_from_path
 from app.rate_limit import limiter, DIAGNOSE_LIMIT
 from app.api.diagnose import (
     MAX_VIDEO_SIZE,
     MIME_TO_EXT,
     MIMO_VIDEO_MIME,
     _extract_first_video_frame,
+    _extract_first_video_frame_from_path,
     _store_temp_video_and_build_url,
     get_public_base_url_diagnostics,
+    spool_upload_to_temp,
 )
 
 router = APIRouter()
@@ -1026,6 +1028,12 @@ async def quick_recognize(
         }
 
 
+def _read_path_bytes(path: str) -> bytes:
+    """디스크 파일을 바이트로 읽는다(MiMo 경로 등 바이트가 꼭 필요한 분기 전용)."""
+    with open(path, "rb") as f:
+        return f.read()
+
+
 @router.post("/screenshot/quick-recognize-video")
 @limiter.limit(DIAGNOSE_LIMIT)
 async def quick_recognize_video(request: Request, file: UploadFile = File(...)):
@@ -1037,18 +1045,32 @@ async def quick_recognize_video(request: Request, file: UploadFile = File(...)):
     if file.content_type and file.content_type not in ALLOWED_VIDEO_MIME:
         raise HTTPException(400, f"지원하지 않는 영상 형식: {file.content_type}")
 
-    video_bytes = await file.read()
-    if len(video_bytes) > MAX_VIDEO_SIZE:
-        raise HTTPException(400, f"영상은 {MAX_VIDEO_SIZE // (1024 * 1024)}MB를 초과할 수 없습니다")
-
     mime = (file.content_type or "video/mp4").strip()
     container_ext = MIME_TO_EXT.get(mime, ".mp4")
+
+    # 업로드를 RAM에 통째로 올리지 않고 디스크 임시 파일로 스트리밍 저장한다(메모리 절감).
+    # 이후 STT/Gemini/프레임 추출이 모두 이 경로에서 읽으므로 peak RAM이 영상 크기와 무관해진다.
+    video_path = await spool_upload_to_temp(file, max_bytes=MAX_VIDEO_SIZE, suffix=container_ext)
+    try:
+        return await _quick_recognize_video_from_path(request, video_path, mime, container_ext)
+    finally:
+        if video_path and os.path.exists(video_path):
+            try:
+                os.remove(video_path)
+            except OSError:
+                logger.warning("영상 임시 파일 삭제 실패: %s", video_path)
+
+
+async def _quick_recognize_video_from_path(
+    request: Request, video_path: str, mime: str, container_ext: str
+) -> dict:
+    """디스크에 저장된 영상 경로로 빠른 인식 파이프라인을 수행한다(메모리 절감 경로)."""
     client = _get_client()
     quick_max_out = _quick_image_max_out_tokens()
     ocr_cap = _quick_ocr_max_tokens()
     provider = _llm_provider()
 
-    stt_task = asyncio.create_task(transcribe_video_with_whisper(video_bytes, container_ext))
+    stt_task = asyncio.create_task(transcribe_video_from_path(video_path))
 
     result: dict = {}
     video_url_mimo: Optional[str] = None
@@ -1060,8 +1082,8 @@ async def quick_recognize_video(request: Request, file: UploadFile = File(...)):
             from app.analysis.video_analyzer import VideoAnalyzer
 
             analyzer = VideoAnalyzer()
-            result = await analyzer.infer_json_from_video_bytes(
-                video_bytes,
+            result = await analyzer.infer_json_from_video_path(
+                video_path,
                 mime_type=mime,
                 prompt_text=_VIDEO_QUICK_PROMPT,
                 system_prompt=(
@@ -1094,6 +1116,8 @@ async def quick_recognize_video(request: Request, file: UploadFile = File(...)):
         )
     if provider != "gemini" and try_mimo_video_url:
         try:
+            # MiMo 경로(비-Gemini)는 바이트가 필요하므로 이 분기에서만 디스크에서 읽는다.
+            video_bytes = await asyncio.to_thread(_read_path_bytes, video_path)
             video_url_mimo = _store_temp_video_and_build_url(request, video_bytes, mime)
             raw = await _video_url_quick_call(client, video_url_mimo)
             if isinstance(raw, dict):
@@ -1122,7 +1146,7 @@ async def quick_recognize_video(request: Request, file: UploadFile = File(...)):
 
     frame_jpeg: Optional[bytes] = None
     if _video_subtitle_payload_insufficient(result):
-        frame_jpeg = _extract_first_video_frame(video_bytes, container_ext)
+        frame_jpeg = _extract_first_video_frame_from_path(video_path)
         if frame_jpeg:
             try:
                 img_bytes, img_mime = _prepare_quick_recognize_image(frame_jpeg)
@@ -1155,7 +1179,7 @@ async def quick_recognize_video(request: Request, file: UploadFile = File(...)):
         or _content_text_looks_like_video_scene_caption(str(result.get("content_text", "")).strip())
         or _video_title_body_same_short_hook(result)
     ):
-        frame_jpeg = _extract_first_video_frame(video_bytes, container_ext)
+        frame_jpeg = _extract_first_video_frame_from_path(video_path)
     if frame_jpeg:
         await _ocr_supplement_quick_result(client, frame_jpeg, result, ocr_cap)
 
