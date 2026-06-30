@@ -346,6 +346,12 @@ export interface QuickRecognizeResult {
   summary: string;
   confidence?: number;
   error?: string;
+  /** 영상: AI가 트렌디 카피를 생성해 title/content_text를 채웠는지 여부 */
+  copy_generated?: boolean;
+  /** 영상: 트렌디 카피로 덮어쓰기 전 추출한 원문 자막/전사(투명성용) */
+  extracted_text?: string;
+  /** 영상: 트렌디 카피와 함께 추천된 해시태그(본문에도 이미 포함됨) */
+  hashtags?: string[];
   publisher?: { name: string; follower_count: string };
   engagement_signal?: {
     likes_visible: number;

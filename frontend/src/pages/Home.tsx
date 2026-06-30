@@ -44,9 +44,10 @@ const CAT_MAP: Record<string, string> = {
   "travel": "travel",
   "education": "education",
   "shop": "shop",
-  "tech": "tech",
-  "beauty": "beauty",
-  "home": "home",
+  // 비표준 키는 공식 8개 카테고리로 매핑(백엔드 _normalize_category와 일치)
+  "tech": "education",
+  "beauty": "fashion",
+  "home": "lifestyle",
 };
 
 /** 병렬 이미지 분석 동시 실행 수 */

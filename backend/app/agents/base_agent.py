@@ -332,14 +332,23 @@ class BaseAgent:
         system_override: Optional[str] = None,
         model_override: Optional[str] = None,
         max_tokens: int = 2048,
+        temperature: Optional[float] = None,
     ) -> dict:
         sys_prompt = system_override or self.system_prompt
         if model_override:
             self.model = model_override
 
-        return await self._call_openai(sys_prompt, user_message, max_tokens=max_tokens)
+        return await self._call_openai(
+            sys_prompt, user_message, max_tokens=max_tokens, temperature=temperature
+        )
 
-    async def _call_openai(self, sys_prompt: str, user_message: str, max_tokens: int = 2048) -> dict:
+    async def _call_openai(
+        self,
+        sys_prompt: str,
+        user_message: str,
+        max_tokens: int = 2048,
+        temperature: Optional[float] = None,
+    ) -> dict:
         messages = [
             {"role": "system", "content": sys_prompt},
             {"role": "user", "content": user_message},
@@ -352,7 +361,10 @@ class BaseAgent:
             kwargs: dict = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": float(os.getenv("LLM_TEMPERATURE", "0")),
+                "temperature": (
+                    temperature if temperature is not None
+                    else float(os.getenv("LLM_TEMPERATURE", "0"))
+                ),
             }
             seed_val = os.getenv("LLM_SEED", "")
             if seed_val:

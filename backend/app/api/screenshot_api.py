@@ -16,7 +16,14 @@ from typing import Optional
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from PIL import Image
 
-from app.agents.base_agent import _get_client, _is_mimo_openai_compat, _llm_provider, _parse_json_from_llm_text
+from app.agents.base_agent import (
+    BaseAgent,
+    MODEL_PRO,
+    _get_client,
+    _is_mimo_openai_compat,
+    _llm_provider,
+    _parse_json_from_llm_text,
+)
 from app.analysis.mimo_video import build_mimo_video_url_content_part
 from app.analysis.video_stt import transcribe_video_with_whisper
 from app.rate_limit import limiter, DIAGNOSE_LIMIT
@@ -72,6 +79,150 @@ SLOT_LABELS = {
     "comments": "댓글 스크린샷",
 }
 
+# 공식 8개 카테고리(baseline DB / CategoryPicker와 일치). 모델이 tech/beauty 등
+# 비표준 키를 반환하면 분류가 깨지므로 _normalize_category로 항상 8개 키에 매핑한다.
+CATEGORY_KEYS = (
+    "food", "fashion", "fitness", "business",
+    "lifestyle", "travel", "education", "shop",
+)
+
+_CATEGORY_ALIASES = {
+    # 표준 영문
+    "food": "food", "fashion": "fashion", "fitness": "fitness", "business": "business",
+    "lifestyle": "lifestyle", "travel": "travel", "education": "education", "shop": "shop",
+    # 비표준 영문 → 표준
+    "beauty": "fashion", "makeup": "fashion", "cosmetic": "fashion", "cosmetics": "fashion",
+    "ootd": "fashion", "nail": "fashion", "skincare": "fashion",
+    "tech": "education", "it": "education", "finance": "education", "study": "education",
+    "howto": "education", "tips": "education", "knowledge": "education", "info": "education",
+    "health": "fitness", "workout": "fitness", "yoga": "fitness", "diet": "fitness", "gym": "fitness",
+    "cafe": "food", "recipe": "food", "restaurant": "food", "cooking": "food",
+    "daily": "lifestyle", "vlog": "lifestyle", "parenting": "lifestyle", "home": "lifestyle",
+    "pet": "lifestyle", "interior": "lifestyle",
+    "trip": "travel", "tour": "travel", "tourism": "travel",
+    "marketing": "business", "brand": "business", "seller": "business", "startup": "business",
+    "review": "shop", "haul": "shop", "shopping": "shop", "product": "shop", "unboxing": "shop",
+    # 한국어 라벨
+    "맛집": "food", "카페": "food", "음식": "food", "맛집/카페": "food", "레시피": "food", "요리": "food",
+    "패션": "fashion", "뷰티": "fashion", "패션/뷰티": "fashion", "코디": "fashion",
+    "메이크업": "fashion", "네일": "fashion", "화장품": "fashion",
+    "운동": "fitness", "헬스": "fitness", "건강": "fitness", "운동/건강": "fitness",
+    "다이어트": "fitness", "요가": "fitness",
+    "사업": "business", "마케팅": "business", "사업/마케팅": "business", "브랜드": "business", "셀러": "business",
+    "일상": "lifestyle", "육아": "lifestyle", "일상/육아": "lifestyle", "브이로그": "lifestyle", "반려동물": "lifestyle",
+    "여행": "travel",
+    "정보": "education", "교육": "education", "정보/교육": "education", "공부": "education",
+    "재테크": "education", "꿀팁": "education",
+    "쇼핑": "shop", "리뷰": "shop", "쇼핑/리뷰": "shop", "하울": "shop", "언박싱": "shop",
+}
+
+
+def _normalize_category(raw: object) -> str:
+    """
+    모델이 반환한 카테고리를 공식 8개 키(CATEGORY_KEYS) 중 하나로 정규화한다.
+    매칭에 실패하면 ""을 반환한다(프론트가 기본값을 유지).
+    """
+    text = str(raw or "").strip().lower()
+    if not text:
+        return ""
+    if text in _CATEGORY_ALIASES:
+        return _CATEGORY_ALIASES[text]
+    # "food/cafe", "패션·뷰티"처럼 합성/장식된 값은 부분 포함으로 매칭(짧은 키는 오탐 방지로 제외).
+    for key, val in _CATEGORY_ALIASES.items():
+        if len(key) >= 4 and key in text:
+            return val
+    return ""
+
+
+def _trendy_copy_enabled() -> bool:
+    """영상 트렌디 카피 자동 생성 on/off (기본 on). VIDEO_TRENDY_COPY=0 으로 끈다."""
+    return os.getenv("VIDEO_TRENDY_COPY", "1").strip().lower() not in ("0", "false", "no", "off")
+
+
+_TRENDY_COPY_SYSTEM = """너는 MZ세대(10~30대)가 진짜 좋아하는 인스타 릴스 카피라이터다.
+영상에서 파악된 내용을 근거로, 저장·공유·댓글을 부르는 트렌디한 한국어 카피를 새로 쓴다.
+
+## 절대 규칙(위반 금지)
+- 영상에 실제로 담긴 소재/내용만 사용한다. 없는 사실·가격·지명·효능·수치를 지어내지 않는다.
+- 과장된 AI 문어체("~하는 것을 추천드립니다", "~인 점 참고 바랍니다") 금지. 친구에게 말하듯 자연스럽게.
+- 번역투, 해시태그 남발, 거짓 클릭베이트 금지.
+
+## title (첫 줄 후킹) — 35자 이내
+- 스크롤을 멈추게 하는 한 줄. 궁금증/공감/반전/숫자 후크 중 하나.
+
+## caption (본문)
+- 짧은 문장 + 줄바꿈으로 3~6줄. 이모지는 과하지 않게 1~4개.
+- 마지막 줄에 저장/댓글/공유/팔로우 중 하나의 CTA를 자연스럽게 넣는다.
+
+## hashtags
+- 카테고리·내용에 맞는, MZ가 실제 검색/사용하는 5~9개.
+- 초대형 일반 태그(#일상 #데일리 #맞팔)는 1~2개로 제한하고 중소형 니치 태그 위주로.
+
+## category (아래 8개 중 정확히 하나)
+food / fashion / fitness / business / lifestyle / travel / education / shop
+
+JSON만 출력(코드블록 금지):
+{"title":"","caption":"","hashtags":["#..."],"category":""}"""
+
+
+async def _generate_trendy_copy(grounding: dict) -> Optional[dict]:
+    """
+    추출된 영상 이해(요약/자막/전사/카테고리)를 근거로 MZ 트렌디 카피를 생성한다.
+    근거(요약/본문)가 전혀 없으면 환각 방지를 위해 생성하지 않고 None을 반환한다.
+    """
+    if not _trendy_copy_enabled():
+        return None
+    summary = str(grounding.get("summary", "")).strip()
+    body = str(grounding.get("content_text", "")).strip()
+    cat = str(grounding.get("category", "")).strip()
+    raw_title = str(grounding.get("title", "")).strip()
+    if not (summary or body):
+        return None
+
+    user_msg = f"""[영상에서 파악된 정보]
+- 추정 카테고리: {cat or '미상'}
+- 한 줄 요약: {summary or '(없음)'}
+- 화면 자막/음성 전사:
+{body[:1500] if body else '(추출된 텍스트 없음)'}
+- 게시 화면 제목(있으면): {raw_title or '(없음)'}
+
+위 영상에 어울리는 인스타 릴스용 트렌디 카피를 만들어라."""
+
+    agent = BaseAgent(model=MODEL_PRO)
+    agent.system_prompt = _TRENDY_COPY_SYSTEM
+    try:
+        out = await agent.call_llm(
+            user_msg,
+            max_tokens=_env_int("VIDEO_TRENDY_COPY_MAX_TOKENS", 1200, min_v=400, max_v=4096),
+            temperature=_env_float("VIDEO_TRENDY_COPY_TEMPERATURE", 0.8, min_v=0.0, max_v=1.5),
+        )
+    except Exception as e:
+        logger.warning("트렌디 카피 생성 실패: %s", e)
+        return None
+    if not isinstance(out, dict) or out.get("error"):
+        logger.warning(
+            "트렌디 카피 생성 응답 이상: %s",
+            out.get("error") if isinstance(out, dict) else type(out).__name__,
+        )
+        return None
+    out.pop("_meta", None)
+
+    title = str(out.get("title", "")).strip()
+    caption = str(out.get("caption", "")).strip()
+    if not (title or caption):
+        return None
+
+    raw_tags = out.get("hashtags") or []
+    tags: list[str] = []
+    if isinstance(raw_tags, list):
+        for t in raw_tags:
+            s = str(t).strip()
+            if s:
+                tags.append(s if s.startswith("#") else f"#{s}")
+
+    gen_cat = _normalize_category(out.get("category", "")) or _normalize_category(cat)
+    return {"title": title, "caption": caption, "hashtags": tags, "category": gen_cat}
+
 _QUICK_PROMPT = """이 인스타그램 스크린샷의 타입을 판별하고 텍스트를 추출하라.
 
 ## slot_type 판별 규칙
@@ -85,8 +236,10 @@ _QUICK_PROMPT = """이 인스타그램 스크린샷의 타입을 판별하고 �
 - title: content 타입에서만 추출, 없으면 ""
 - content_text: content 타입에서만 추출, 없으면 ""
 - title/content_text는 화면에 실제 보이는 원문만 사용하고 번역/의역 금지
-- category: 아래 키 중 하나
-  food / fashion / tech / travel / beauty / fitness / business / lifestyle / education / shop
+- category: 아래 8개 중 정확히 하나만 사용(다른 단어/영어 변형 금지)
+  food(맛집/카페/요리) / fashion(패션/뷰티/메이크업/네일/코디) / fitness(운동/헬스/다이어트/요가) /
+  business(사업/마케팅/브랜드/셀러) / lifestyle(일상/육아/브이로그/반려동물) / travel(여행) /
+  education(정보/교육/공부/재테크/IT/꿀팁) / shop(쇼핑/제품리뷰/하울/언박싱)
 - summary: 1문장 요약(반드시 한국어)
 - likes: 화면에서 보이는 좋아요 수(정수), 없으면 0
 
@@ -116,7 +269,10 @@ _VIDEO_QUICK_PROMPT = """너는 인스타 릴스/영상 콘텐츠 이해 보조 
 ## 기타 필드
 1) slot_type: 대부분 content. 프로필 화면은 profile, 댓글 목록은 comments, 그 외는 other.
 2) extra_slots: 빠른 스크린샷 인식 규칙과 동일.
-3) category: quick 규칙의 category 키 사용.
+3) category: 아래 8개 중 정확히 하나만 사용(다른 단어/영어 변형 금지).
+   food(맛집/카페/요리) / fashion(패션/뷰티/메이크업/네일/코디) / fitness(운동/헬스/다이어트/요가) /
+   business(사업/마케팅/브랜드/셀러) / lifestyle(일상/육아/브이로그/반려동물) / travel(여행) /
+   education(정보/교육/공부/재테크/IT/꿀팁) / shop(쇼핑/제품리뷰/하울/언박싱)
 4) summary: 1~2문장 전체 요약(사람이 빠르게 훑는 용도). content_text 대체 금지.
    summary는 반드시 한국어로 작성한다.
 5) confidence: 0~1, 자막/전사 정확도 및 완성도 신뢰도.
@@ -442,6 +598,9 @@ def _normalize_quick_recognition_fields(
     slot_type = _normalize_slot_type(result.get("slot_type", ""))
     result["slot_type"] = slot_type
     result["extra_slots"] = _normalize_extra_slots(result.get("extra_slots"))
+    # category를 공식 8개 키로 정규화(tech/beauty 등 비표준 키 → 표준 매핑, 미매칭은 "")
+    if "category" in result:
+        result["category"] = _normalize_category(result.get("category", ""))
     # likes/publisher 필드를 프론트엔드 형식(engagement_signal/publisher)으로 정규화
     if "likes" in result and "engagement_signal" not in result:
         likes = int(result.pop("likes", 0) or 0)
@@ -1052,6 +1211,29 @@ async def quick_recognize_video(request: Request, file: UploadFile = File(...)):
     _sanitize_video_derived_title(result)
     _sanitize_video_meta_narrative_content(result)
     _coerce_video_quick_slot_when_body_present(result)
+
+    # === 트렌디 MZ 카피 생성 ===
+    # 위에서 추출/정제한 영상 이해(요약·자막·전사)를 근거로 제목/본문/해시태그를 새로 쓴다.
+    # 추출 원문은 extracted_text로 보존하고, 사용자 입력칸에 채워질 title/content_text를 덮어쓴다.
+    trendy = await _generate_trendy_copy(result)
+    if trendy:
+        result["extracted_text"] = str(result.get("content_text", "")).strip()
+        result["title"] = trendy["title"][:100]
+        caption_body = trendy["caption"].strip()
+        if trendy["hashtags"]:
+            caption_body = f"{caption_body}\n\n{' '.join(trendy['hashtags'])}"
+        result["content_text"] = caption_body
+        result["hashtags"] = trendy["hashtags"]
+        if trendy["category"]:
+            result["category"] = trendy["category"]
+        result["slot_type"] = "content"
+        result["copy_generated"] = True
+        logger.info(
+            "트렌디 카피 생성 완료 title=%s tags=%d category=%s",
+            trendy["title"][:40],
+            len(trendy["hashtags"]),
+            result.get("category", ""),
+        )
 
     logger.info(
         "영상 빠른 인식 최종 결과: slot_type=%s title=%s category=%s",
