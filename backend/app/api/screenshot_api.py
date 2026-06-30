@@ -190,12 +190,21 @@ async def _generate_trendy_copy(grounding: dict) -> Optional[dict]:
 
     agent = BaseAgent(model=MODEL_PRO)
     agent.system_prompt = _TRENDY_COPY_SYSTEM
+    # 카피 생성은 부가 기능이다. LLM이 느리거나 멈춰도 영상 인식 요청 전체가 길어져
+    # 프록시 502가 나지 않도록 자체 타임아웃으로 감싸고, 초과 시 추출본으로 폴백한다.
+    timeout_s = _env_float("VIDEO_TRENDY_COPY_TIMEOUT_SEC", 25.0, min_v=5.0, max_v=120.0)
     try:
-        out = await agent.call_llm(
-            user_msg,
-            max_tokens=_env_int("VIDEO_TRENDY_COPY_MAX_TOKENS", 1200, min_v=400, max_v=4096),
-            temperature=_env_float("VIDEO_TRENDY_COPY_TEMPERATURE", 0.8, min_v=0.0, max_v=1.5),
+        out = await asyncio.wait_for(
+            agent.call_llm(
+                user_msg,
+                max_tokens=_env_int("VIDEO_TRENDY_COPY_MAX_TOKENS", 1200, min_v=400, max_v=4096),
+                temperature=_env_float("VIDEO_TRENDY_COPY_TEMPERATURE", 0.8, min_v=0.0, max_v=1.5),
+            ),
+            timeout=timeout_s,
         )
+    except asyncio.TimeoutError:
+        logger.warning("트렌디 카피 생성 타임아웃(%.0fs) — 추출본 유지", timeout_s)
+        return None
     except Exception as e:
         logger.warning("트렌디 카피 생성 실패: %s", e)
         return None

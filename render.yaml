@@ -28,6 +28,13 @@ services:
         value: instagram
       - key: ALLOWED_ORIGINS
         value: "https://insta-post-advisor.onrender.com"
+      # === 영상 업로드/처리 한도 (무료 인스턴스 512MB RAM에 맞춰 보수적으로) ===
+      # 300MB 업로드 시 바이트 로드+프레임추출+STT 재전송이 겹쳐 OOM→502가 발생한다.
+      - key: MAX_VIDEO_UPLOAD_MB
+        value: "60"
+      # 단일 동기 요청이 너무 길면 프록시 502가 나므로 STT 대기 상한을 낮춘다.
+      - key: VIDEO_STT_TIMEOUT_SEC
+        value: "120"
       # === 영상 STT (Groq whisper-large-v3-turbo) — ffmpeg는 Docker 이미지에 포함 ===
       - key: VIDEO_STT_ENABLED
         value: "1"
